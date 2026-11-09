@@ -487,3 +487,72 @@ under a fresh executable filename if Windows retains an old generic icon.
 Confirm the original active eye appears. The read-only native extraction and
 exact frame comparison establish that Windows can obtain the intended icon;
 no additional user runtime claim is inferred for this last resource-only build.
+
+## CI and main-branch rules — 2026-11-08 local checkpoint
+
+Status: independent review found no defects in the final CI/ruleset change on
+`ci/protect-main`. Local policy, checksum-script, and documentation checks passed.
+The lead applied the reviewed rules and supplied server readback below. The
+feature branch/PR and actual hosted Windows workflow have not yet been validated
+at this checkpoint. Local file checks do not establish a successful hosted run.
+
+The validator changed only this evidence document and temporary validation
+files under `portable-test/ci-validation-tools`. No workflow, rule JSON,
+CODEOWNERS, application code, credentials, remote settings, commits, or pushes
+were changed by the validator. The previously passing seven Rust tests and
+release-build evidence are reused for unchanged application/build sources;
+the local release SHA256 remains
+`2B6555F4D449CA94EE2AC71B9FAD756DBB8B49CFCDB4DBAF8CE9564FB5CD272D`.
+No GUI or native power tests were repeated for CI configuration.
+
+| Check | Actual result | Status |
+|---|---|---|
+| Rules JSON parsing and exact policy checks | Both JSON documents parse; target only `refs/heads/main`; active; layered requirements match below | Pass |
+| CODEOWNERS | Sole noncomment entry is `* @tbrownhe`, including CI/ruleset definitions | Pass |
+| Workflow inspection | PRs to main, main pushes, manual dispatch; read-only contents; no privileged PR event/secrets; no persisted checkout credentials; pinned first-party actions/toolchain; expected runner/check/artifact | Pass: source inspection |
+| PowerShell checksum script | Parsed without AST errors; executed against a temporary copied release fixture; lowercase SHA256 plus `redeye.exe` output matches; both artifact paths exist | Pass |
+| Local source Markdown links and whitespace | All 35 local links resolve; `git diff --check` clean | Pass |
+| Local workflow YAML/schema/expression lint | Official actionlint 1.7.12 Windows/amd64, checksum verified before execution; `actionlint .github/workflows/ci.yml` exit 0 with no findings | Pass |
+| Actual GitHub parser, Windows CI job, artifact, and PR merge | Awaiting hosted run/remote evidence | Pending |
+
+Workflow inspected: runner `windows-2025-vs2026`, job/check `Windows CI`,
+20-minute timeout, `RUSTUP_TOOLCHAIN=1.99.1-x86_64-pc-windows-msvc`, required
+Rust checks and release build. Checkout is pinned to
+`3d3c42e5aac5ba805825da76410c181273ba90b1`; upload-artifact to
+`cf430e030ddbb5b0abf93d22962f4752f3646cd9`. Superseded runs cancel only for the
+same PR; main/manual runs have unique run-ID groups. Successful artifact
+`RedEye-windows-x64` contains only the executable/checksum and expires after
+seven days. Source inspection does not substitute for execution on that runner.
+
+Temporary actionlint came from the
+[official v1.7.12 release](https://github.com/rhysd/actionlint/releases/tag/v1.7.12).
+Direct downloads returned HTTP 504; the official GitHub asset API fallback
+succeeded. The archive SHA256
+`6E7241B51E6817EA6A047693D8E6FED13B31819C9A0DD6C5A726E1592D22F6E9`
+matched GitHub's published asset digest before extraction/execution. Its
+reported version was 1.7.12. No permanent installation, PATH change, project
+dependency, workflow change, or linter suppression was needed.
+
+The lead supplied authenticated GitHub API readback after applying the reviewed
+JSON through API version `2026-03-10`:
+
+- Active [main-integrity ruleset](https://github.com/tbrownhe/RedEye/rules/26833257)
+  ID `26833257`, no bypass actors. Requires a PR, resolved conversations, strict
+  up-to-date `Windows CI` from GitHub Actions integration `15368`; blocks deletion
+  and non-fast-forward changes.
+- Active [owner-review ruleset](https://github.com/tbrownhe/RedEye/rules/26833258)
+  ID `26833258`, one approval, CODEOWNER approval, stale approval dismissal.
+  Only User `97360755` (`@tbrownhe`) has the user-approved `pull_request` review
+  bypass. It does not bypass the independent integrity/CI ruleset.
+- The effective main-branch endpoint returned five rules: deletion,
+  non-fast-forward, integrity PR/conversation requirements, required status,
+  and owner-review PR requirements. No weakening or temporary exception was
+  reported. This is lead-supplied server readback, not a validator remote write.
+
+Next remote checks: open the reviewed feature branch as a PR; observe the
+actual hosted `Windows CI` run, all commands and uploaded artifact; verify the
+check's GitHub Actions identity and effective rules; merge only after success
+using the explicitly authorized owner review exception through the PR. A docs
+evidence update must receive its own final successful CI run before merge.
+Existing unperformed native release checks remain unperformed; CI does not
+prove tray behavior, power requests, sign-in, or Windows 10 coverage.
