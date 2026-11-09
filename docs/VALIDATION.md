@@ -874,3 +874,60 @@ cross-session isolation, DPI changes, lock/explicit sleep, forced termination,
 and long-idle checks remain **not run**. The broader
 [native matrix](WORKFLOW.md#windows-validation-matrix) still applies; selecting
 version `0.1.0` does not turn these checks into passes. Publication stays manual.
+
+### v0.1.0 hosted source and unpublished draft
+
+The lead supplied successful required Windows CI for
+[PR #6](https://github.com/tbrownhe/RedEye/pull/6), exact head
+`82aff5f9b225377430a15716f5153a0741049357`: check `129283399778`, Actions app
+`15368`, [run 42652819646](https://github.com/tbrownhe/RedEye/actions/runs/42652819646).
+It merged as `d943ea528c5aff043e4f32175d884f0bd2f6ea9c`, whose
+[main-push CI](https://github.com/tbrownhe/RedEye/actions/runs/42653114377)
+passed before the owner created annotated tag `v0.1.0`.
+
+Downloaded JSON independently confirms
+[tag run 42653448541](https://github.com/tbrownhe/RedEye/actions/runs/42653448541)
+was an owner `tbrownhe` push for `v0.1.0` on that exact SHA and both jobs passed.
+Bounded logs show the real gate selected main CI `42653114377`; the build had
+Actions/Contents read permissions and only the isolated draft job had Contents
+write. The writer's steps contain no checkout. Its recorded prerelease input
+is `false`, so the unchanged conditional omits `--prerelease` while retaining
+explicit draft-only creation and existing-tag verification.
+
+The CLI returned
+[draft 439362565](https://github.com/tbrownhe/RedEye/releases/tag/untagged-55f5a18b20cb914dafca).
+The downloaded API JSON independently verifies `draft=true`, `prerelease=false`,
+`published_at=null`, tag `v0.1.0`, exact target `d943ea...`, neutral release
+wording, and exactly three uploaded assets. It is not published. The lead's
+separate readback confirms the existing RC remains published as a prerelease
+with its original three asset IDs and digests unchanged.
+
+| Exact draft asset | Bytes | SHA256 matching API digest and downloaded content |
+|---|---:|---|
+| `RedEye.exe` (asset `728128174`) | 474,624 | `7FB15BAF7A3C008D98ABD0A4EE168807A9E05A2A6F41ED337223208732E0AE57` |
+| `RedEye-windows-x64.zip` (asset `728128169`) | 326,102 | `23BBFD4F897109D042B29C9B18F6DBD6558D0D6AC4E4A1DAC3C141CD26F9CD69` |
+| `SHA256SUMS.txt` (asset `728128168`) | 168 | `AC310EBA17D92E2D732803DA66D4686E9C2F49FE15C436207D3A639AD713F5FE` |
+
+Independent checks passed for the exact three ZIP entries, bounded CRC reads,
+both checksum layers, standalone/ZIP exe byte equality, README `0.1.0` and full
+source SHA, and neutral package heading. Windows version-resource inspection
+reports Product/FileVersion `0.1.0`; byte parsing confirms x64 GUI subsystem 2,
+the six expected system DLL imports without a separate CRT DLL, no manifest
+resource, and all eight original source-identical active icon frames. Local
+fixture and hosted hashes are identified separately; no cross-run binary/ZIP
+reproducibility claim is made.
+
+The validator also copied this exact downloaded exe alone to an ignored
+standalone folder. Repeated normal-user preflight confirmed matching SID
+(ending `1001`), interactive session 4, no administrator token, and the existing
+user/session mutex held throughout. Test PID `128048` exited 0 within five
+seconds; installed PID `12704`, start time, and executable path remained intact.
+This is additional exact-artifact duplicate-exit evidence only: no installed
+app was stopped, no settings/startup state changed, and fresh GUI/power/Exit
+behavior remains untested on this final binary. The manual smoke above and all
+other unperformed native checks remain open.
+
+The lead downloaded the metadata, logs, and assets; the validator used local
+evidence and the bounded native duplicate test, without credentials or remote
+mutations. This documentation-only follow-up leaves the tagged source and
+uploaded files intact and must pass protected PR CI. Publication stays manual.

@@ -701,3 +701,20 @@ later evidence-only commit does not move the RC tag or rebuild its assets.
   incremental version-change/rebuild check and independent review; no runtime
   behavior changes. File tracking follows the
   [official Cargo build-script contract](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rerun-if-changed).
+
+### v0.1.0 hosted draft
+
+[PR #6](https://github.com/tbrownhe/RedEye/pull/6) passed its required exact-head
+Windows CI and merged as `d943ea528c5aff043e4f32175d884f0bd2f6ea9c`.
+That commit's [main-push CI](https://github.com/tbrownhe/RedEye/actions/runs/42653114377)
+passed before the owner pushed annotated tag `v0.1.0`.
+The [tag-triggered run](https://github.com/tbrownhe/RedEye/actions/runs/42653448541)
+then passed both jobs and created draft `439362565` with the executable, ZIP,
+and checksums. API readback confirms `draft=true`, `prerelease=false`, no
+publication timestamp, and the exact tagged commit as its target.
+
+Publication remains manual after inspecting the draft and the remaining
+[native smoke steps](VALIDATION.md#remaining-exact-artifact-manual-smoke).
+Selecting a non-prerelease version does not establish new native coverage.
+The original RC remains published with unchanged assets. This evidence-only
+follow-up does not move either tag or rebuild the draft's files.
