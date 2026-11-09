@@ -280,6 +280,54 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Add four named specialists under `.codex/agents/`; main agent remains lead; inherit model and permission settings | User expected reusable subagents; [official docs](https://learn.chatgpt.com/docs/agent-configuration/subagents) specify standalone TOML definitions; no project config overrides needed |
 | 2026-11-08 | Supersede the initial sequential single-agent default: require delegated implementation, independent review, and validation for almost every code change | User requested the subagent workflow for almost any code change; narrow exceptions cover read-only work and nonfunctional documentation/instruction/comment/formatting changes; no extra workflow skill required |
 | 2026-11-08 | Defer crate/event-loop/settings-format choices until environment and current APIs are verified | The handover makes Windows click handling, thread ownership, small dependencies, and compatibility selection criteria |
+| 2026-11-08 | Milestone 1 uses a direct, scalar `extern "system"` Kernel32 import and no crates | Microsoft API documentation and local SDK 10.0.26100.0 `WinBase.h`/`WinNT.h` confirm the DWORD signature, flags, and Windows compatibility; one API does not need a binding dependency. Reevaluate bindings before tray implementation. |
+| 2026-11-08 | Main owns the power request; the wrapper is neither `Send` nor `Sync`; cleanup is explicit | Thread-affine requests must not migrate. `PhantomData<Rc<()>>` prevents safe cross-thread movement/sharing without allocation. Explicit cleanup can report failures that a destructor could not return. |
 
 Add a short row for a material decision, including source links when verifying
 external APIs. Revisit a choice when evidence changes; avoid speculative design.
+
+## Implementation checkpoint — 2026-11-08
+
+- Lead inspected repository instructions, the handover, tracked files, and Git
+  status before implementation. Existing untracked `handover.md` and
+  `icon_idea.jpg` are user inputs and remain untouched. Git inspection uses
+  `-c safe.directory=C:/Users/tbrow/dev/RedEye` for this repository only.
+- Rust and Cargo still resolve from `C:\Users\tbrow\.cargo\bin` without PATH
+  changes: Rust/Cargo 1.99.1, `stable-x86_64-pc-windows-msvc`. No tools were
+  reinstalled. The native environment reports Windows 11 Home, version
+  10.0.26300, build 26300, x64; Windows 10 has not been tested.
+- Milestone 1 implementation is assigned to `windows_engineer`; independent
+  `correctness_reviewer` review and `release_validator` checks follow it.
+  Later milestones remain gated on the native power-request evidence.
+- The lead checked Microsoft's current
+  [SetThreadExecutionState reference](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadexecutionstate):
+  requests are thread-owned, continuous requests require no periodic refresh,
+  zero indicates failure, and clearing uses `ES_CONTINUOUS` alone. The API is
+  available on Windows 10/11 through Kernel32. It does not document a
+  `GetLastError` contract, so failure messages must not invent an OS error code.
+- `powercfg /requests` was attempted inside and outside the sandbox. The
+  outside-sandbox diagnostic reports that an elevated command prompt is
+  required. This is an unavailable diagnostic privilege, not a requirement
+  to elevate RedEye. Native request appearance/removal is **not yet verified**.
+  User assistance with the elevated diagnostic has been requested.
+- Milestone 1 now has a console implementation in `src/main.rs` and
+  `src/power.rs`, with no third-party dependencies. It starts active, accepts
+  `on`, `off`, `status`, and `quit`, and exits on EOF. `quit`, EOF, and returned
+  I/O/API errors all reach explicit cleanup. Ctrl+C/window closure are abrupt
+  termination paths; use `quit` when testing explicit cleanup.
+- Implementation checks passed: `cargo fmt --check`, `cargo check --locked`,
+  `cargo clippy --locked --all-targets -- -D warnings`, `cargo test --locked`
+  (two focused tests), and `cargo build --locked`. Console on/off/on/quit and
+  EOF smoke runs returned zero and reported explicit clear. These results
+  prove successful API returns, not external Windows request observation.
+- Independent `correctness_reviewer` review found no correctness defects.
+  `release_validator` repeated the Rust checks and console smoke tests on the
+  unchanged executable; all passed. The user supplied an elevated diagnostic
+  baseline with every category `None`; active/off/on/exit outputs are pending.
+  Milestone 1 remains implemented but not fully validated. See
+  [validation evidence](VALIDATION.md) for the artifact hash, checks, limits,
+  and exact remaining steps. Milestones 2–5 have not started.
+- The lead directly maintained prose documentation under the documented
+  nonfunctional exception; application code, tests, manifest, lockfile, and
+  ignore configuration followed delegated implementation, separate review,
+  and specialist validation.
