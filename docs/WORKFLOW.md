@@ -21,12 +21,35 @@ Learning and documentation are shared responsibilities. The implementation
 engineer explains the design; the reviewer checks that the explanation matches
 the code; the lead keeps the user informed.
 
-Roles are hats, not headcount. Default to sequential work for this small codebase.
-If parallel agents are explicitly requested, split independent work such as
-asset design and a bounded power module. Do not assign concurrent edits to the
-same file. A review agent should review an integrated diff rather than rewrite
-it unseen. If one agent fills both implementation and review roles, label the
-review as a self-review, not independent approval.
+The main agent leads; implementation, independent review, and validation use
+separate specialist subagents for almost every code change. This is a standing
+project requirement, so the user need not explicitly request agents each time.
+Run dependent roles sequentially. Parallel work is appropriate only for
+independent tasks, such as asset design and a bounded power module, with
+separate file ownership. A review agent reviews the integrated diff and does
+not rewrite it unseen. Self-review does not satisfy independent review.
+
+## When the subagent workflow is required
+
+Use the full implementation -> independent review -> validation sequence for
+application code, tests, executable scripts, build/CI configuration, dependency
+and lockfile changes, and behavior-affecting settings or assets. Include small
+fixes, refactors, and one-line behavior changes. Use `windows_engineer` for
+implementation, `correctness_reviewer` for independent review, and
+`release_validator` for checks of the final result. Add `ux_designer` for visual
+design or icon work. The lead owns scope, integration, and the final report.
+
+The lead may work directly on read-only investigation or changes limited to
+prose documentation, agent/workflow instructions, comments, or formatting that
+cannot affect executable behavior. Documentation tests, tool directives,
+functional configuration, and changes mixed with code are not exempt. State
+the exception used in the task summary. If unsure, use the full workflow.
+
+Delegate automatically within the authorized task scope under `AGENTS.md`;
+do not ask for repeated delegation permission. These standing instructions
+supply orchestration without an additional workflow skill. If a required role
+is unavailable, report it and continue unaffected investigation rather than
+silently replacing independent review with self-review.
 
 ## Codex agent definitions
 
@@ -53,7 +76,8 @@ A `.codex/config.toml` is optional for defaults or concurrency settings; this
 project currently needs no overrides. Do not add legacy registration stanzas
 or model identifiers without verifying the installed client's requirements.
 
-Example requests, once the relevant milestone is authorized:
+Example requests, once the relevant milestone is authorized (naming agents is
+optional because the standing workflow already requires them for code changes):
 
 - "Delegate milestone 1 power control to windows_engineer, then have
   correctness_reviewer review the integrated change."
@@ -74,19 +98,31 @@ alone is not evidence that this running session has loaded or exercised them.
 2. **Verify assumptions:** Inspect tools; check current official API/library
    documentation when selecting dependencies. Resolve the smallest uncertain
    integration with a focused experiment before committing the architecture.
-3. **Implement:** Make one coherent change with explicit resource ownership
-   and error behavior. Explain the Rust concept it introduces.
-4. **Review:** Inspect the actual diff against acceptance criteria and the
-   invariants in `AGENTS.md`. Fix correctness findings before moving on.
-5. **Validate:** Run applicable Rust checks and external Windows checks. Record
-   pass, fail, or not run, with a reason. Recheck affected behavior after fixes.
+3. **Implement:** Delegate a coherent change to `windows_engineer`, with
+   `ux_designer` for visual work as needed. Require explicit resource ownership,
+   error behavior, and an explanation of the Rust concepts introduced.
+4. **Review:** After integration, have a separate `correctness_reviewer`
+   inspect the actual final diff against acceptance criteria and `AGENTS.md`.
+   Send fixes to the implementation owner and have the reviewer recheck them.
+   Review subsequent functional changes as well; do not rely on a stale review.
+5. **Validate:** Have `release_validator` run applicable Rust and external
+   Windows checks on the resulting change. Record pass, fail, or not run, with
+   a reason. Reuse evidence for unchanged artifacts and recheck affected
+   behavior after fixes. Native milestone gates still require native evidence.
 6. **Hand off:** Summarize changed behavior, evidence, limitations, and the next
    step. Update milestone status and material decisions here.
 
 A delegated task brief must include its role, goal, owned files, constraints,
 acceptance criteria, dependencies on other work, and expected evidence. Its
 return must identify changes, checks, unresolved issues, and teaching notes.
-The lead runs integration checks after combining delegated changes.
+The lead verifies integration and the evidence returned for the combined
+changes; it need not rerun passing checks on an unchanged artifact. Any
+functional integration fixes go through the same implementation, review, and
+validation sequence. Do not mark unresolved correctness findings complete.
+
+Tell implementing agents that they are sharing the repository and must not
+revert others' work. Their task brief does not authorize them to delegate
+recursively unless the lead explicitly assigns that responsibility.
 
 Use the existing session or task description for these briefs. Do not create
 a ticket hierarchy, mandatory approval ceremony, or a document for every edit.
@@ -242,6 +278,7 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 |---|---|---|
 | 2026-11-08 | Use root `AGENTS.md` plus this workflow; five roles can run sequentially | Clear instructions and accountable review without a large process for a small learning project |
 | 2026-11-08 | Add four named specialists under `.codex/agents/`; main agent remains lead; inherit model and permission settings | User expected reusable subagents; [official docs](https://learn.chatgpt.com/docs/agent-configuration/subagents) specify standalone TOML definitions; no project config overrides needed |
+| 2026-11-08 | Supersede the initial sequential single-agent default: require delegated implementation, independent review, and validation for almost every code change | User requested the subagent workflow for almost any code change; narrow exceptions cover read-only work and nonfunctional documentation/instruction/comment/formatting changes; no extra workflow skill required |
 | 2026-11-08 | Defer crate/event-loop/settings-format choices until environment and current APIs are verified | The handover makes Windows click handling, thread ownership, small dependencies, and compatibility selection criteria |
 
 Add a short row for a material decision, including source links when verifying
