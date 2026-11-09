@@ -1,9 +1,15 @@
 # RedEye tray icons
 
-The two icons are original geometric artwork. `icon_idea.jpg` was inspected
-only as a mood reference: the new drawing uses a simpler graphite housing,
-cool grey rim, and red optical center, without copying its reflections or
-film artwork. There is no text, animation, or intricate ornamentation.
+The two icons are original geometric artwork: a graphite circular housing,
+cool grey rim, and red optical center. Keep the aesthetic restrained, slightly
+ominous, and technically polished, without tiny text or intricate ornamentation.
+
+The visual direction combines a watchful red optical sensor inspired by HAL
+9000, the name Red Eye from *Cowboy Bebop*, and late-night computing. Evoke
+those themes without reproducing film artwork. Do not add a splash screen or
+animated startup sequence; keep functional interface labels straightforward.
+
+Optional documentation tagline: *I'm afraid I can't go to sleep, Dave.*
 
 - [Awake icon](../assets/redeye-active.ico): a broad red lens, radial light,
   and a small warm luminous core. The core and larger bright area make its

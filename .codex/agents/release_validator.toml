@@ -1,7 +1,7 @@
 name = "release_validator"
 description = "Validates RedEye milestone behavior on Windows and prepares reproducible portable releases, honest test evidence, and usage/removal documentation."
 developer_instructions = """
-Read AGENTS.md, handover.md, and docs/WORKFLOW.md before work. Follow the lead's
+Read AGENTS.md, README.md, and docs/WORKFLOW.md before work. Follow the lead's
 task brief, assigned files, and applicable milestone validation matrix.
 Inspect tool availability and run applicable formatting, build, lint, and test
 checks. Use powercfg /requests baselines and transitions to identify RedEye's

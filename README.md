@@ -8,6 +8,33 @@ release checks are unverified. See [validation evidence](docs/VALIDATION.md)
 for the exact artifacts and limitations, and [the workflow](docs/WORKFLOW.md)
 for implementation decisions.
 
+## Product scope
+
+RedEye supports long-running computational work, including autonomous coding
+sessions, through native Windows power requests instead of periodic NumLock
+input simulation. Keep the utility compact, dependable, low in CPU/memory
+use, and understandable to an engineer learning Rust. Correctness and
+readability take priority over feature count.
+
+The v0.1 product is a native notification-area utility with no visible main
+window, service, elevation, embedded browser, telemetry, runtime networking,
+or automatic updates. Keep-awake behavior must not poll or simulate input.
+Respect locking, explicit sleep/shutdown, organizational policies, and remote
+session inactivity. Avoid large UI frameworks such as Tauri, Electron, and
+PySide, unnecessary async runtimes, and databases.
+
+Out of scope for v0.1: timed or scheduled awake sessions, global hotkeys,
+automatic process/task detection, desktop widgets or floating overlays, a
+full settings window, integrations (including Codex-specific integration),
+remote control, and cloud synchronization.
+
+Deliver a working Rust project, portable Windows executable with embedded
+original active/inactive icons, reproducible build instructions, usage and
+removal documentation, and concise explanations of the relevant Rust and
+Windows decisions. [Icon direction](docs/ICONS.md),
+[milestone gates](docs/WORKFLOW.md), and [test evidence](docs/VALIDATION.md)
+complete the product baseline.
+
 ## Install and run
 
 Copy `RedEye.exe` from the portable package to a stable folder, such as
@@ -90,6 +117,22 @@ cargo check --locked
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 ```
+
+## Code layout
+
+| File | Responsibility |
+|---|---|
+| `src/main.rs` | Initialization, effective state and display preference, main-thread event coordination, and graceful shutdown |
+| `src/power.rs` | Small safe `PowerRequest` interface around thread-owned `SetThreadExecutionState`; independent of UI code |
+| `src/tray.rs` | Hidden native window, blocking event dispatch, icon/menu/tooltip updates, and owned UI resources |
+| `src/settings.rs` | Per-user display preference and actual opt-in startup registration |
+| `src/instance.rs` | Session/user single-instance guard |
+| `build.rs` | Build-time executable icon resource embedding |
+
+Keep ownership, borrowing, unsafe FFI boundaries, native event-loop behavior,
+and explicit cleanup explanations tied to the code being changed. Avoid
+abstractions or modules without a current consumer. Single-instance protection
+must stay lightweight; do not introduce IPC or a service merely to enforce it.
 
 `windows-sys` 0.61.2 supplies native tray bindings, with `windows-link` as its
 only supporting crate. `power.rs` wraps one scalar Kernel32 call. Its owner

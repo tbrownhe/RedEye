@@ -2,10 +2,11 @@
 
 ## Outcome and source of truth
 
-Build the v0.1 utility described in [the handover](../handover.md), incrementally,
+Build the v0.1 utility described in [README.md](../README.md), incrementally,
 while teaching the Rust and Windows concepts behind each meaningful change.
 [AGENTS.md](../AGENTS.md) supplies the standing instructions. This document
-defines responsibility, delivery gates, and evidence. Keep it small and current.
+defines responsibility, delivery gates, and evidence. [Icon direction](ICONS.md)
+defines the original visual identity. Keep these documents small and current.
 
 ## Roles
 
@@ -13,7 +14,7 @@ defines responsibility, delivery gates, and evidence. Keep it small and current.
 |---|---|---|
 | Lead / integrator | Scope, milestone plan, architecture choices, integration, user communication | A bounded task with acceptance criteria; coherent integrated changes; decision and verification summary |
 | Rust / Windows engineer | Power API, owning thread, event loop, tray integration, settings, startup, single instance | Readable implementation, small safe FFI boundary, meaningful focused tests, concise learning notes |
-| UX / asset designer | Tray interactions, menu wording, error presentation, original eye icons and DPI variants | Active/inactive assets and an in-context check at actual tray sizes; behavior consistent with the handover |
+| UX / asset designer | Tray interactions, menu wording, error presentation, original eye icons and DPI variants | Active/inactive assets and an in-context check at actual tray sizes; behavior consistent with the product scope and icon direction |
 | Correctness reviewer | Diff review, unsafe reasoning, ownership, failure paths, dependency cost, scope | Findings with file locations, impact, and required fixes; explicit assessment of milestone acceptance criteria |
 | Validation / release engineer | External Windows behavior, regression checks, portable build, README and removal instructions | Commands and observed results, manual-test evidence, remaining limitations, reproducible release procedure |
 
@@ -93,8 +94,9 @@ alone is not evidence that this running session has loaded or exercised them.
 
 ## Work loop
 
-1. **Frame:** Read the relevant handover requirements and current code. State
-   the milestone, acceptance criteria, affected files, and technical unknowns.
+1. **Frame:** Read the relevant product requirements in `README.md` and current
+   code. State the milestone, acceptance criteria, affected files, and technical
+   unknowns.
 2. **Verify assumptions:** Inspect tools; check current official API/library
    documentation when selecting dependencies. Resolve the smallest uncertain
    integration with a focused experiment before committing the architecture.
@@ -200,7 +202,7 @@ Use a short verification section in the task/PR; retain release evidence under
 
 ## Initial checkpoint — 2026-11-08
 
-- Read the complete handover. Existing inputs: `handover.md` and `icon_idea.jpg`.
+- Reviewed the initial product requirements and visual direction.
 - Added the workflow and repository instructions. No application code or Cargo
   manifest has been created; dependency versions and APIs remain to be verified.
 - Added four project custom-agent TOML definitions under `.codex/agents/` after
@@ -279,7 +281,7 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Use root `AGENTS.md` plus this workflow; five roles can run sequentially | Clear instructions and accountable review without a large process for a small learning project |
 | 2026-11-08 | Add four named specialists under `.codex/agents/`; main agent remains lead; inherit model and permission settings | User expected reusable subagents; [official docs](https://learn.chatgpt.com/docs/agent-configuration/subagents) specify standalone TOML definitions; no project config overrides needed |
 | 2026-11-08 | Supersede the initial sequential single-agent default: require delegated implementation, independent review, and validation for almost every code change | User requested the subagent workflow for almost any code change; narrow exceptions cover read-only work and nonfunctional documentation/instruction/comment/formatting changes; no extra workflow skill required |
-| 2026-11-08 | Defer crate/event-loop/settings-format choices until environment and current APIs are verified | The handover makes Windows click handling, thread ownership, small dependencies, and compatibility selection criteria |
+| 2026-11-08 | Defer crate/event-loop/settings-format choices until environment and current APIs are verified | Product requirements make Windows click handling, thread ownership, small dependencies, and compatibility selection criteria |
 | 2026-11-08 | Milestone 1 uses a direct, scalar `extern "system"` Kernel32 import and no crates | Microsoft API documentation and local SDK 10.0.26100.0 `WinBase.h`/`WinNT.h` confirm the DWORD signature, flags, and Windows compatibility; one API does not need a binding dependency. Reevaluate bindings before tray implementation. |
 | 2026-11-08 | Main owns the power request; the wrapper is neither `Send` nor `Sync`; cleanup is explicit | Thread-affine requests must not migrate. `PhantomData<Rc<()>>` prevents safe cross-thread movement/sharing without allocation. Explicit cleanup can report failures that a destructor could not return. |
 | 2026-11-08 | For milestone 2 use `windows-sys` 0.61.2 with a native hidden window and blocking message loop | [Official manifest](https://docs.rs/crate/windows-sys/0.61.2/source/Cargo.toml.orig): MSRV 1.71, no default features, only `windows-link` underneath. Enable `Win32_Foundation`, `Win32_Graphics_Gdi`, `Win32_System_LibraryLoader`, `Win32_UI_Shell`, and `Win32_UI_WindowsAndMessaging`. [Rust target support](https://doc.rust-lang.org/rustc/platform-support.html) covers x64 MSVC Windows 10+. |
@@ -300,9 +302,9 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
 
 ## Implementation checkpoint — 2026-11-08
 
-- Lead inspected repository instructions, the handover, tracked files, and Git
-  status before implementation. Existing untracked `handover.md` and
-  `icon_idea.jpg` are user inputs and remain untouched. Git inspection uses
+- Lead inspected repository instructions, product requirements, tracked files,
+  and Git status before implementation, preserving the initial project inputs.
+  Git inspection uses
   `-c safe.directory=C:/Users/tbrow/dev/RedEye` for this repository only.
 - Rust and Cargo still resolve from `C:\Users\tbrow\.cargo\bin` without PATH
   changes: Rust/Cargo 1.99.1, `stable-x86_64-pc-windows-msvc`. No tools were
@@ -452,3 +454,18 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   release checks remain unverified, with exact follow-up steps recorded.
   Runtime code is unchanged by the resource-only follow-up; no new application
   launch is claimed for it. No release was published or tagged.
+
+## Documentation consolidation — 2026-11-08
+
+- Product scope, exclusions, deliverables, and module responsibilities now
+  live in `README.md`; visual direction and optional brand text live in
+  `docs/ICONS.md`. This workflow retains milestone gates, decisions, and
+  validation responsibilities, with evidence in `docs/VALIDATION.md`.
+- Retired the obsolete initial planning inputs at the user's request. Repository
+  and specialist instructions now read the maintained product/visual docs.
+- The lead used the nonfunctional documentation/agent-instruction exception.
+  Application source, build configuration, generated icons, and release
+  artifacts did not change. All 29 local documentation links resolve; all four
+  specialist TOML files parse with only intended instruction-text changes.
+  Reference scans are clear and release artifact hashes are unchanged. Rust
+  builds/native tests were not repeated for this documentation-only change.

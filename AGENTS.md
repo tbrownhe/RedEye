@@ -2,7 +2,7 @@
 
 ## Read first
 
-Read [handover.md](handover.md) for the product requirements and
+Read [README.md](README.md) for product scope and behavior and
 [docs/WORKFLOW.md](docs/WORKFLOW.md) for roles, milestone gates, and validation.
 Inspect the current files and working-tree changes before editing. Preserve
 user work. Use this uppercase `AGENTS.md` as the repository instruction entry
@@ -17,8 +17,9 @@ learning Rust. Simplicity and correctness take priority over feature count.
 - Follow the user's current task. Workflow setup does not authorize building
   the entire application. During implementation, complete a small, testable
   milestone before expanding scope.
-- Treat the handover as the product baseline. Record material technical
-  decisions and their reasons in `docs/WORKFLOW.md`; do not silently change
+- Treat `README.md` as the product baseline and `docs/ICONS.md` as the visual
+  direction. Record material technical decisions and their reasons in
+  `docs/WORKFLOW.md`; do not silently change
   required behavior. Ask only when a product choice materially changes scope
   or user expectations. Resolve routine engineering choices independently.
 - Use the mandatory subagent workflow below for almost every code change.
@@ -84,14 +85,15 @@ required workflow was completed.
 - No artificial keyboard/mouse input or polling to keep the machine awake.
 - Do not interfere with locking, explicit sleep/shutdown, organizational
   policies, or remote-session inactivity behavior.
-- Keep the handover's v0.1 exclusions out of scope, including timers, hotkeys,
-  process detection, full settings windows, and integrations.
+- Keep the v0.1 exclusions in `README.md` out of scope, including timers,
+  hotkeys, process detection, full settings windows, and integrations.
 - Start active on manual and sign-in launch. Default to allowing the display
   to turn off. Sign-in launch is opt-in. Do not persist the active state.
 - Left-click toggles awake state; right-click opens a native menu. Icon,
   tooltip, and checkmarks must accurately represent the effective state.
-- Use `icon_idea.jpg` as a visual reference, not a finished tray asset. Deliver
-  original active/inactive icons readable at 16x16 and suitable for high DPI.
+- Follow `docs/ICONS.md` and preserve the original eye assets and reproducible
+  drawing source. Active/inactive icons must remain readable at 16x16 and
+  suitable for high DPI.
 
 ## Correctness invariants
 
@@ -125,9 +127,10 @@ for versions and evidence. If an agent shell cannot resolve Cargo, prepend
 `%USERPROFILE%\.cargo\bin` to that command process's PATH. Do not interpret a
 stale inherited PATH as a missing installation or change permanent settings.
 
-Start with the handover's suggested `main.rs`, `power.rs`, `tray.rs`, and
-`settings.rs` boundaries as each becomes necessary. Avoid empty scaffolding,
-generic frameworks, extra crates, and abstractions with no current consumer.
+Keep the module responsibilities described in `README.md`, including
+`main.rs`, `power.rs`, `tray.rs`, `settings.rs`, and `instance.rs`. Avoid empty
+scaffolding, generic frameworks, extra crates, and abstractions with no current
+consumer.
 Commit `Cargo.lock` for the executable once Cargo is initialized.
 
 For Rust changes, once the toolchain and manifest exist, run applicable checks:
