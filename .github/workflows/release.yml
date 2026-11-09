@@ -161,7 +161,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Cannot check existing releases; refusing to create a draft.' }
           if ($existingTags -ccontains $tag) { throw 'A release or draft already exists for this tag. Inspect it manually; remove an incomplete draft only after review, then retry. Existing releases/assets are never overwritten.' }
           $notes = @(
-            "RedEye $version portable Windows x64 candidate.",
+            "RedEye $version portable Windows x64 release.",
             "Source commit: $sha",
             "Successful main CI: $env:RELEASE_CI_URL",
             '',
@@ -171,7 +171,7 @@ jobs:
             'Windows 11 core behavior was checked during development. Windows 10, real sign-in, real Explorer restart, cross-session isolation, DPI changes, and lock/explicit-sleep behavior remain unverified. Automated builds do not replace these native checks.',
             'See docs/VALIDATION.md in the source repository for evidence and exact manual steps.',
             '',
-            'This release remains a draft. The owner must inspect it and manually choose Publish.'
+            'Created as a draft for owner review; publication is manual.'
           )
           $notes | Set-Content -LiteralPath release-notes.txt -Encoding utf8
           $arguments = @('release', 'create', $tag, '--repo', $repo, '--draft', '--verify-tag', '--target', $sha, '--title', "RedEye $version", '--notes-file', 'release-notes.txt')

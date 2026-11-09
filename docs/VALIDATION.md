@@ -790,3 +790,87 @@ published prerelease and all three existing assets, with unchanged digests.
 No local Cargo/build/native tests were repeated for this documentation-only
 change; runtime files and native-test limits are unchanged. Required protected
 PR CI remains a separate merge gate, not a claim of new native coverage.
+
+## v0.1.0 local release preparation — 2026-11-09
+
+Status: final independent review and local validation passed on
+`release/v0.1.0`; protected PR/main CI, the new owner tag, draft creation, and
+uploaded assets remain pending. Runtime source, native artwork, and the four
+dependency packages are unchanged. Version metadata is `0.1.0`; the package
+heading and generated notes now use neutral release wording.
+
+Environment: Windows NT build `10.0.26300.0`, x64; Rust/Cargo `1.99.1`, native
+`x86_64-pc-windows-msvc`. Existing tools resolved without installation or PATH
+changes. Required formatting, locked check, Clippy, seven tests, and locked
+release build independently passed. Both workflows passed the previously
+checksum-verified actionlint 1.7.12; the actual inline publisher parsed without
+being executed. Eight mocked release-gate cases passed, including stable
+`version=0.1.0` and `prerelease=false`; these are not hosted-CI evidence.
+
+The engineer observed the stale-resource defect and tested the no-clean
+`0.1.0 → 0.1.0-rc.2 → 0.1.0` build sequence after adding `Cargo.toml` as an
+explicit build-script input. Both Windows version fields followed each change.
+These are engineer-observed results; raw regression terminal logs were not
+persisted. The validator did not edit the manifest to repeat that sequence,
+but independently checked current Cargo output tracks the manifest, rebuilt
+without cleaning, and read Product/FileVersion `0.1.0`. The earlier packaging
+rejection was inferred from the guard, not an executed negative test.
+
+Actual post-fix packaging independently passed. The output has exactly
+`RedEye.exe`, `RedEye-windows-x64.zip`, and `SHA256SUMS.txt`; the ZIP has exactly
+the exe, usage README, and internal sums. CRC reads, both checksum layers,
+exe payload equality, neutral heading, resolved placeholders, x64 GUI subsystem
+2, the six existing system DLL imports, and all eight source-identical active
+icon frames passed. No separate CRT DLL or manifest resource was introduced.
+
+Local exe: 474,624 bytes, SHA256
+`E67C60C662FF21FED7504AA745E81656256C25EDF38C2CEDCAA52AD3F03ADE88`.
+The validator's ZIP is 321,425 bytes, SHA256
+`922E7D830CE37380509F2ECFB2F46528C3619D4C9AFD2F0F831AA6CBCF6541AF`.
+Its README stamps base HEAD `d334937309c34bf1d9098ba4a049a1e6161fef8e`
+because this is a precommit working-tree fixture, not an approved release
+artifact from that base. Hosted packages must be checked by their own hashes.
+
+### Bounded standalone duplicate smoke
+
+The restricted agent's CIM owner query was denied, so it did not launch the
+app there. In an authorized normal-user command outside the sandbox, repeated
+preflight established the same SID (ending `1001`) and interactive session 4
+as installed PID `12704`, with no administrator token. The validator held an
+existing session/user mutex handle, copied only the new exe into an ignored
+standalone folder, and launched it. Test PID `78952` exited 0 within five
+seconds; the installed process's PID, start time, and path were retained.
+No installed app was stopped, settings changed, or startup registered.
+
+This verifies only the new binary's standalone duplicate-exit path. It does
+not exercise fresh tray creation, an active power request, or normal Exit on
+the new binary. Earlier functional evidence is reused for unchanged runtime
+source; the exact new artifact still needs the following manual smoke.
+
+### Remaining exact-artifact manual smoke
+
+1. Copy the verified new `RedEye.exe` alone to a stable test folder, for
+   example `%LOCALAPPDATA%\RedEye-v0.1.0-smoke`. Record the current display
+   preference. When convenient, choose **Exit** on the installed copy; the
+   agent has deliberately left it running.
+2. In an Administrator PowerShell, run `powercfg /requests` as the baseline.
+   Identify requests from other apps separately; no RedEye request should
+   remain after its normal Exit.
+3. Launch the new copy from an ordinary, non-administrator PowerShell with
+   `& "$env:LOCALAPPDATA\RedEye-v0.1.0-smoke\RedEye.exe"`. Check one eye icon,
+   no main window/console/elevation, and an **Awake** tooltip. Saved display
+   preference may restore; set **Keep display on** off and check `powercfg
+   /requests`: RedEye should appear only under SYSTEM.
+4. Enable **Keep display on**: RedEye should appear under DISPLAY and SYSTEM.
+   Left-click to allow sleep: both should disappear. Change the display
+   preference while inactive: both should stay absent. Enable awake again:
+   requests should match the saved display preference, icon, and checkmarks.
+5. Launch the same copy again: one process/icon should remain. Restore the
+   prior display preference, choose **Exit**, and verify no RedEye requests
+   remain. The installed copy can then be launched again if desired.
+
+Fresh-artifact GUI/power smoke and Windows 10, real sign-in, Explorer restart,
+cross-session isolation, DPI changes, lock/explicit sleep, forced termination,
+and long-idle checks remain **not run**. The broader
+[native matrix](WORKFLOW.md#windows-validation-matrix) still applies; selecting
+version `0.1.0` does not turn these checks into passes. Publication stays manual.

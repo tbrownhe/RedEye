@@ -667,3 +667,37 @@ later evidence-only commit does not move the RC tag or rebuild its assets.
   release `438855643`, tag `v0.1.0-rc.1`, is now a published prerelease with
   the executable, ZIP, and checksums available. Earlier draft observations in
   this document and the evidence log describe their historical checkpoints.
+
+## v0.1.0 release preparation — 2026-11-09
+
+- At the user's request, prepare version `0.1.0` and tag `v0.1.0` through the
+  existing protected PR, successful main CI, owner tag, and draft-release flow.
+  Publication remains manual. The RC tag and its published assets stay intact.
+- Runtime Rust source, dependencies, native icon assets, and
+  power/thread ownership are unchanged from `v0.1.0-rc.1`. The Cargo package and
+  lockfile version must change so the rebuilt executable's version resource,
+  package README, and tag all identify `0.1.0`. The rebuilt binary gets its own
+  hashes; it is not assumed byte-identical to the RC.
+- Package and generated release-note wording use the neutral word "release"
+  so stable versions are not mislabeled as release candidates. A version
+  without a prerelease suffix yields `prerelease=false`; it does not bypass
+  the draft stage or main-CI gate.
+- The Windows engineer owns these version/template changes. A separate
+  reviewer checks the final diff and the release validator checks the build,
+  package, and uploaded artifacts. The lead handles prose under the
+  documentation-only exception and integrates through protected PRs.
+- Existing Windows 11 observations are reused only for unchanged behavior.
+  The outstanding Windows 10, sign-in, Explorer restart, session isolation,
+  DPI, lock/sleep, forced-termination, and long-idle tests remain unperformed.
+  Choosing `0.1.0` does not establish additional native coverage or imply that
+  these checks passed. Exact new-artifact verification is recorded in
+  [VALIDATION.md](VALIDATION.md).
+- Local incremental packaging exposed stale Windows version metadata: after
+  changing the manifest to `0.1.0`, the existing cached resource still reported
+  `0.1.0-rc.1`. Inspection confirmed the packager's version guard would reject
+  that mismatch; only post-fix packaging was executed. The engineer adds the
+  manifest to `build.rs`'s explicit Cargo rerun inputs so a metadata change
+  regenerates the PE resource. This build-only correction is covered by an
+  incremental version-change/rebuild check and independent review; no runtime
+  behavior changes. File tracking follows the
+  [official Cargo build-script contract](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rerun-if-changed).
