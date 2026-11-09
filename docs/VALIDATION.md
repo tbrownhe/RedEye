@@ -670,3 +670,87 @@ an unpublished prerelease draft with three verified assets/checksum layers.
 Tag/main SHA and successful main-CI evidence must agree. The draft stays
 unpublished until the owner manually chooses Publish. Local mocks/builds prove
 neither these remote outcomes nor additional native Windows coverage.
+
+### Hosted PR and manual preview verification
+
+[PR #3](https://github.com/tbrownhe/RedEye/pull/3), head
+`110bbe96729fd7aba365bf3a32239223ab7eea59`, passed
+[Windows CI run 42580852281](https://github.com/tbrownhe/RedEye/actions/runs/42580852281).
+The lead supplied exact-head check `129038938388`, GitHub Actions app `15368`,
+and all 13 successful steps. Downloaded run/jobs JSON and bounded checkout logs
+independently confirm the run and package's actual PR merge checkout
+`853434400a2aa448d1ca53e3750dfc0041be5a6d`, matching its README; it is correctly
+distinct from the PR head. Artifact `13656479730` has exactly three outer files
+and three inner ZIP entries, matching both checksum layers. Its 650,216-byte
+download SHA256 is
+`5879205B4E7DC1CEFC0CFC1FF9E9F4B68434AE1683C050934137520DD28B70A9`;
+exe SHA256 `FABFFE0AD9E24A8410F261B0D460A5227FB0B59229418BEAAEC55285A00E7F26`.
+
+The approved PR merged to main
+`3f544b167455541c46ebb1d507570eb0d8395c03`; its successful
+[main-push CI run 42581083549](https://github.com/tbrownhe/RedEye/actions/runs/42581083549)
+is the release gate's exact source evidence. The lead reports protected merge,
+automatic source-branch cleanup, and unchanged main protections.
+
+[Manual preview 42581216660](https://github.com/tbrownhe/RedEye/actions/runs/42581216660)
+completed successfully on that main SHA. Downloaded JSON/logs confirm
+`workflow_dispatch`, successful read-only build, and **Create draft release
+skipped**. The real gate log selected main CI `42581083549` for that exact SHA;
+build token permissions were Actions/Contents read. The lead's remote readback
+found both tags and releases still empty after preview. This demonstrates the
+manual path creates artifacts without creating a tag or release.
+
+Preview artifact `13656874082` is 650,212 bytes, SHA256
+`205CE240477590613084965DDF940056DDEBBC3C1CD57C44EE1AA9CE84C6375C`.
+Independent checks verified exact outer/inner filenames, internal/external
+hashes, README `0.1.0-rc.1` and source `3f544b...`, version resources, x64 GUI
+subsystem, original eight icon frames, and system-only imports. Preview exe
+SHA256 is `04AF4E685FF9EE96F0D8E201E9ACDDF26B4E25EE36F3FF0A0FD54859CF7B3B51`;
+ZIP SHA256 is `D5E9A62C21BE33E95141AC725D1D50A79106D0EE876E91A3242C63992E922670`.
+
+### First actual tagged prerelease draft
+
+The owner created annotated tag `v0.1.0-rc.1` on approved main commit
+`3f544b167455541c46ebb1d507570eb0d8395c03`. The validator's read-only local tag
+peel confirms that exact commit. The tag remains on that source; evidence-only
+documentation afterward does not move it.
+
+[Tag run 42581531830](https://github.com/tbrownhe/RedEye/actions/runs/42581531830)
+succeeded. Downloaded run/jobs JSON confirms event `push`, tag branch
+`v0.1.0-rc.1`, actor `tbrownhe`, exact head `3f544b...`, and both build and draft
+jobs successful. Bounded logs independently show the real gate accepted main
+CI `42581083549` for that SHA. Build permissions are Actions/Contents read;
+only the separate draft job receives Contents write. Its recorded steps
+download/verify/create and do not check out or execute repository code.
+
+The CLI returned
+[draft 438855643](https://github.com/tbrownhe/RedEye/releases/tag/untagged-7d89c6a36a830bd60ae8).
+Downloaded API JSON independently verifies `draft=true`, `prerelease=true`,
+`published_at=null`, tag `v0.1.0-rc.1`, exact target `3f544b...`, and exactly
+three uploaded assets. This is an unpublished maintainer-visible draft, not
+a public release. The owner must still inspect it and manually choose Publish.
+
+| Draft asset | Bytes | SHA256, independently matching API digest and downloaded content |
+|---|---:|---|
+| `RedEye.exe` (asset `726655415`) | 474,624 | `E90F7B920580FF6332EBD8D72E6D4938F4D7ED4B7D8E0E1B4D16924573F78712` |
+| `RedEye-windows-x64.zip` (asset `726655416`) | 326,112 | `783F8716F7D3429A2B60ECA6CA6A595FB477CF0588B00EFC8639A41C703E39C9` |
+| `SHA256SUMS.txt` (asset `726655414`) | 168 | `746483824726F582D6EC7CAC56CA6A43937B96C857D0D5977F8810F53E0A467D` |
+
+The validator independently read the exact three ZIP names, CRC/bounded
+payloads, both checksum layers, and byte equality of standalone/ZIP exe. README
+version and full source commit match the tag. Windows version-resource reads
+confirm Product/FileVersion `0.1.0-rc.1`; byte parsing confirms x64 PE32+/GUI
+subsystem 2, the six expected system DLL imports with no separate CRT DLL,
+group icon 1 and all eight source-identical 32-bit frames, and no manifest
+resource. No executable entry point, GUI interaction, registry action, or
+disruptive native test was performed. All artifacts were downloaded by the
+lead; the validator read only local evidence and wrote ignored test results.
+
+The PR, preview, draft, and earlier local executable hashes differ. Each is
+identified and checked independently; no deterministic cross-run binary/ZIP
+claim is made. The final draft executable has not undergone an additional
+native GUI/power run. Prior functional evidence is reused for unchanged runtime
+source, while Windows 10, real sign-in, Explorer restart, cross-session, DPI
+changes, lock/sleep, forced termination, and long-idle checks remain **not run**.
+This documentation follow-up requires its own protected PR CI before merge;
+it does not publish the draft or change the existing tag/assets.
