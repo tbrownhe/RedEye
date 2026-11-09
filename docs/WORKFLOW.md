@@ -292,6 +292,7 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Single-instance guard is a session-local mutex named with the current user SID | [CreateMutexW](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createmutexw) with no initial ownership and immediate `ERROR_ALREADY_EXISTS` handling needs no waits or IPC. [Local namespaces](https://learn.microsoft.com/en-us/windows/win32/termserv/kernel-object-namespaces) separate sessions; the SID also separates users. Owned token/mutex handles stay alive for the required scope. |
 | 2026-11-08 | Restore the current tray icon after Explorer's `TaskbarCreated` broadcast | The hidden top-level window receives the [documented notification](https://learn.microsoft.com/en-us/windows/win32/shell/taskbar#taskbar-creation-notification). Re-add the current icon and callback version on the owning thread; do not refresh power requests. A failed restore must report and cleanly exit. |
 | 2026-11-08 | Plan static CRT linkage and the GUI subsystem for the portable release | Read-only `dumpbin` inspection found `VCRUNTIME140.dll` in the debug imports. Rust supports [static CRT linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes) on x64 MSVC, configured through [target rustflags](https://doc.rust-lang.org/cargo/reference/config.html#targettriplerustflags). The [windows_subsystem attribute](https://doc.rust-lang.org/reference/runtime.html#the-windows_subsystem-attribute) removes the release console. Final imports/subsystem and standalone behavior must be verified after milestone 4 completes. |
+| 2026-11-08 | Initialize system-DPI awareness before any window, warning, or icon metric | Default DPI-unaware metrics could select a 16-pixel source even on a scaled desktop. [SetProcessDPIAware](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiaware) is supported since Vista and avoids requiring newer Windows 10 APIs; tolerate existing awareness and check initialization success. Microsoft [prefers a manifest](https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process), but this small single-threaded app can initialize before all UI without adding a build script. System-DPI-at-launch is the supported approach; multi-monitor scaling remains a documented validation limit. |
 
 Add a short row for a material decision, including source links when verifying
 external APIs. Revisit a choice when evidence changes; avoid speculative design.
@@ -406,3 +407,26 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   [validation evidence](VALIDATION.md); no automated result substitutes for
   them. Milestone 5 now prepares a portable release candidate with these
   limitations clearly retained.
+
+## Milestone 5 checkpoint — 2026-11-08
+
+- Release builds use the GUI subsystem and static CRT. Checked process DPI
+  initialization precedes every window/dialog/metric query. No new crates,
+  build scripts, profile tuning, service, or elevation requirement were added.
+- Independent final/cumulative source review found no correctness defects.
+  Specialist validation passed formatting, locked check, Clippy, seven tests,
+  and `cargo build --release --locked`. PE inspection confirms x64 GUI
+  subsystem 2 and only Windows system DLL imports, with no separate VC runtime
+  dependency. The final executable is 407,040 bytes.
+- A copied executable, self-contained usage/removal/build instructions,
+  checksums, and ZIP are prepared under `dist/`. The binary embeds both icon
+  assets and needs no loose assets or Cargo. Its exact SHA-256 and package
+  evidence are recorded in [validation evidence](VALIDATION.md).
+- User confirmed the copied executable's no-console/no-elevation launch,
+  tray/state behavior, and Exit/request cleanup. This remains a release
+  candidate with the previously listed manual release-readiness checks
+  unperformed. No release has been published or tagged.
+- The user then requested the red eye on the executable itself. PE icon
+  resources are a separate bounded follow-up: reuse the original active ICO,
+  verify the resource build tooling, independently review, rebuild, and
+  validate the resulting resources/hash before final packaging.

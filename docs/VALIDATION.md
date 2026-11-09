@@ -356,3 +356,79 @@ Release-readiness checks still requiring deliberate user action:
   change was performed by the validator.
 - **Windows 10 (not run):** repeat the native lifecycle/state/startup matrix on
   an identified Windows 10 build and record the OS/artifact and outcomes.
+
+## Milestone 5 — 2026-11-08
+
+Status: final cumulative independent source review found no defects. Required
+checks/release build and initial portable packaging passed. The user confirmed
+the copied executable's native portable procedure below. A subsequent bounded
+executable-icon resource change is in progress; this section identifies the
+historical pre-resource artifact, not the final package. The validator did not
+launch or control the application, send UI input, or write startup/settings
+registration during this validation.
+
+Environment: Windows 11 Home build 26300 x64 / Rust 1.99.1 native MSVC.
+Release artifact: `target/release/redeye.exe`, 407,040 bytes, SHA256
+`11AE78034EAB953983A4EDA2CA27A244BA0DCFE72617A1474B42FCA9D7B4CD68`.
+The copied `dist/RedEye-v0.1.0-windows-x64/RedEye.exe` has the same hash.
+The hash was unchanged before/after checks and release build.
+
+| Check | Actual result | Status |
+|---|---|---|
+| `cargo fmt --check` | Exit 0 | Pass |
+| `cargo check --locked` | Exit 0 | Pass |
+| `cargo clippy --locked --all-targets -- -D warnings` | Exit 0, no lint findings | Pass |
+| `cargo test --locked` | Seven tests passed | Pass |
+| `cargo build --release --locked` | Exit 0; expected optimized artifact/hash | Pass |
+| PE header | Machine `0x8664` x64, PE32+ `0x20B`, subsystem 2 Windows GUI; independently confirmed by `dumpbin /headers` | Pass |
+| `dumpbin /dependents` | Only Windows system imports listed below; no VCRUNTIME, MSVCP, UCRT, or other separately shipped runtime DLL | Pass |
+| Source dependency lock | App plus `windows-sys 0.61.2` and `windows-link 0.2.1`; no package/version change | Pass |
+| Portable package contents | Exe, standalone README.txt, SHA256SUMS.txt only; no loose icons, DLLs, Cargo, or source requirements at runtime | Pass |
+| Copied release launch, no console/elevation, menu/state/Exit and native requests | User confirmed the requested procedure, including the four-state contract and cleanup; no raw diagnostic transcript supplied | Pass: user confirmation for this artifact |
+
+The checked-in `.cargo/config.toml` sets `+crt-static` for native x64 MSVC.
+`dumpbin` listed `KERNEL32.dll`, `user32.dll`, `shell32.dll`, `advapi32.dll`,
+`api-ms-win-core-synch-l1-2-0.dll`, and `ntdll.dll`. Windows supplies these system
+libraries. Header/import inspection supports portability; the user separately
+confirmed runtime behavior. The package has not been published, tagged,
+uploaded, or code-signed. ZIP/checksum finalization is paused for the requested
+original executable icon resource; a new artifact hash and resource/native
+smoke checks will be recorded after that change is reviewed.
+
+The native core results from milestones 1–4 and unchanged asset checks are
+reused for the unchanged functional paths. Release changes select a GUI
+subsystem, static CRT, and system-DPI initialization; their native run was
+confirmed separately by the user. Historical debug hashes identify earlier
+tests, not this release executable.
+
+### Completed portable native procedure for the pre-resource artifact
+
+With earlier RedEye copies exited, double-click the copied `RedEye.exe` from
+the dist folder in Explorer. Expect one tray icon, no console/main window, and
+no elevation prompt. Verify tooltip, left-click/menu awake toggles, the display
+option, and right-click dismissal. In a separate Administrator PowerShell,
+capture `powercfg /requests` while active/display off, active/display on,
+inactive with both preferences, and after Exit. Expect the same four-state
+contract and no RedEye request after normal Exit. Check the menu remains
+usable from the copied executable without Cargo or loose assets.
+
+The user confirmed this procedure for SHA256
+`11AE78034EAB953983A4EDA2CA27A244BA0DCFE72617A1474B42FCA9D7B4CD68`.
+This is user summary confirmation, not an agent-run UI test or raw powercfg
+transcript. The upcoming executable-icon resource build requires a new hash,
+PE resource verification, and brief icon/launch smoke evidence before final
+packaging. Unchanged functional evidence can be reused with that distinction.
+
+Actual sign-in launch, Explorer restart, cross-session isolation, Windows 10,
+DPI/monitor changes, lock/explicit sleep, forced termination, and long-duration
+resource behavior remain **not run**. These limits prevent a claim of full
+Windows 10/11 release validation. Sign-in, Explorer, cross-session, and Windows
+10 follow-up steps are recorded in milestone 4. For DPI, change Windows display
+scaling or move between different-DPI monitors when safe, restart RedEye, and
+check both states/readability and menu. For lock/sleep, save work, lock/unlock
+and explicitly sleep/resume, verify Windows behavior is respected, then check
+RedEye's state/requests and Exit cleanup. For forced termination, end only a
+known RedEye test process and verify its requests disappear; note shell icon
+cleanup delay. Observe CPU/memory after settling and during a longer idle
+period without injecting input or keep-awake polling, recording duration and
+environment rather than treating the earlier 3-second debug sample as coverage.

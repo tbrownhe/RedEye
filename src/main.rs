@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 #[cfg(not(windows))]
 compile_error!("RedEye requires Windows 10 or Windows 11.");
 
@@ -11,6 +13,12 @@ use std::{io::Write, process::ExitCode};
 use power::PowerRequest;
 
 fn main() -> ExitCode {
+    // Select real system-DPI icon dimensions before any HWND, warning dialog,
+    // or metric query. This is system awareness, not per-monitor DPI handling.
+    if let Err(error) = tray::initialize_dpi() {
+        tray::report_error(&error);
+        return ExitCode::FAILURE;
+    }
     // Keep the session/user mutex handle alive until after power cleanup.
     // A duplicate returns before changing power, reading settings, or adding UI.
     let _instance = match instance::acquire() {

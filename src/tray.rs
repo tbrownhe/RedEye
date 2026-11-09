@@ -34,6 +34,17 @@ const TRAY_MESSAGE: u32 = WM_APP + 1;
 const WAKE_MESSAGE: u32 = WM_APP + 2;
 const KEY_SELECT: u32 = NIN_SELECT + 1;
 
+pub fn initialize_dpi() -> Result<(), String> {
+    // SAFETY: Both functions take no pointers. Called once before creating any
+    // window or querying metrics. Respect awareness already set by Windows.
+    // SetProcessDPIAware documents a BOOL result, not a GetLastError contract.
+    if unsafe { IsProcessDPIAware() != 0 || SetProcessDPIAware() != 0 } {
+        Ok(())
+    } else {
+        Err("Windows could not configure RedEye's system-DPI awareness. Restart RedEye; if the error continues, review its Windows app compatibility settings.".into())
+    }
+}
+
 #[derive(Clone, Copy)]
 enum Action {
     LeftClick,

@@ -1,20 +1,36 @@
 # RedEye
 
-A small Windows 10/11 utility for preventing automatic idle sleep.
+A small Windows 10/11 x64 tray utility for preventing automatic idle sleep.
 
-Development is at **milestone 4: persistence and lifecycle**. Portable release
-packaging is next. See
-[the workflow](docs/WORKFLOW.md) for status and
-[validation evidence](docs/VALIDATION.md) for checks and remaining native tests.
+The v0.1 implementation is available as a portable release candidate. Windows
+11 native core behavior has been checked; Windows 10 and the remaining manual
+release checks are unverified. See [validation evidence](docs/VALIDATION.md)
+for the exact artifacts and limitations, and [the workflow](docs/WORKFLOW.md)
+for implementation decisions.
 
-## Build and run
+## Install and run
 
-Use stable Rust with the native Windows x64 MSVC toolchain and C++ build tools:
+Copy `RedEye.exe` from the portable package to a stable folder, such as
+`%LOCALAPPDATA%\RedEye`, and launch it. No installer, administrator privileges,
+Cargo, or external icon files are required. The release build has no console
+or visible main window. Nothing is registered for sign-in until you enable it.
+
+## Build from source
+
+Use stable Rust with the native Windows x64 MSVC toolchain and C++ build tools.
+Rust/Cargo 1.99.1 was verified for this project:
 
 ```powershell
-cargo build --locked
-& .\target\debug\redeye.exe
+cargo build --release --locked
+& .\target\release\redeye.exe
 ```
+
+The checked-in target configuration links the CRT statically, avoiding a
+separate Visual C++ runtime installation. Copy the executable to a stable
+folder before enabling sign-in launch. For console diagnostics during
+development, use `cargo build --locked` and `target\debug\redeye.exe`.
+
+## Use
 
 RedEye starts active, with the display allowed off by default; a saved display
 preference is restored. Its original red eye
@@ -30,13 +46,17 @@ toggles awake state. Right-click for a native menu:
 Bright/dark eye icons, tooltips, and checkmarks show the effective state after
 Windows accepts a change. Display preference is saved per user; awake state is
 not saved, so every launch starts active. A second launch in the same user
-session exits without another icon. The debug build still has a console.
-Closing it terminates the process
-and relies on Windows releasing the thread-owned request.
+session exits without another icon; it does not stop the existing instance.
+Use **Exit** for explicit cleanup. Forced termination relies on Windows
+releasing the thread-owned request; Explorer may briefly retain a stale icon.
 
 RedEye runs without elevation. Windows may require an Administrator terminal
 for the separate `powercfg /requests` diagnostic. It does not prevent locking,
 explicit sleep/shutdown, or organizational policy enforcement.
+
+The icon uses system DPI at launch. Restart after changing display scaling
+for the sharpest size. Per-monitor scaling changes and multiple DPI settings
+have not been validated.
 
 ## Sign-in launch and settings
 
