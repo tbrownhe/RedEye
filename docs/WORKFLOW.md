@@ -293,6 +293,7 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Restore the current tray icon after Explorer's `TaskbarCreated` broadcast | The hidden top-level window receives the [documented notification](https://learn.microsoft.com/en-us/windows/win32/shell/taskbar#taskbar-creation-notification). Re-add the current icon and callback version on the owning thread; do not refresh power requests. A failed restore must report and cleanly exit. |
 | 2026-11-08 | Plan static CRT linkage and the GUI subsystem for the portable release | Read-only `dumpbin` inspection found `VCRUNTIME140.dll` in the debug imports. Rust supports [static CRT linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes) on x64 MSVC, configured through [target rustflags](https://doc.rust-lang.org/cargo/reference/config.html#targettriplerustflags). The [windows_subsystem attribute](https://doc.rust-lang.org/reference/runtime.html#the-windows_subsystem-attribute) removes the release console. Final imports/subsystem and standalone behavior must be verified after milestone 4 completes. |
 | 2026-11-08 | Initialize system-DPI awareness before any window, warning, or icon metric | Default DPI-unaware metrics could select a 16-pixel source even on a scaled desktop. [SetProcessDPIAware](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiaware) is supported since Vista and avoids requiring newer Windows 10 APIs; tolerate existing awareness and check initialization success. Microsoft [prefers a manifest](https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process), but this small single-threaded app can initialize before all UI without adding a build script. System-DPI-at-launch is the supported approach; multi-monitor scaling remains a documented validation limit. |
+| 2026-11-08 | Embed the existing active eye as a PE application-icon resource, as requested by the user | [winresource 0.1.34](https://docs.rs/crate/winresource/0.1.34) with default features disabled adds only `version_check` 0.9.5 at build time, with no new runtime dependencies. Its [official source](https://github.com/BenjaminRi/winresource) verifies `set_icon`/`compile` and Windows SDK discovery. The crate declares no MSRV; the project's actual Rust 1.99.1 was tested. A small `build.rs` fails on resource-compiler errors and tracks source ICO/tool overrides. SDK `rc.exe` is a build requirement, not a runtime dependency. All eight [icon resource](https://learn.microsoft.com/en-us/windows/win32/menurc/icon-resource) sizes are retained. |
 
 Add a short row for a material decision, including source links when verifying
 external APIs. Revisit a choice when evidence changes; avoid speculative design.
@@ -417,7 +418,7 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   Specialist validation passed formatting, locked check, Clippy, seven tests,
   and `cargo build --release --locked`. PE inspection confirms x64 GUI
   subsystem 2 and only Windows system DLL imports, with no separate VC runtime
-  dependency. The final executable is 407,040 bytes.
+  dependency. This pre-resource executable was 407,040 bytes.
 - A copied executable, self-contained usage/removal/build instructions,
   checksums, and ZIP are prepared under `dist/`. The binary embeds both icon
   assets and needs no loose assets or Cargo. Its exact SHA-256 and package
@@ -430,3 +431,24 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   resources are a separate bounded follow-up: reuse the original active ICO,
   verify the resource build tooling, independently review, rebuild, and
   validate the resulting resources/hash before final packaging.
+
+## Executable-icon follow-up — 2026-11-08
+
+- Reused the original active ICO as the default PE application icon, retaining
+  all eight sizes for Explorer and shortcuts. Runtime code and tray visuals
+  did not change. `build.rs` uses the installed SDK resource compiler through
+  the verified minimal build helper; compile errors fail the build.
+- Separate review found no defects. Required Rust checks, seven tests, and
+  the release build passed. Independent PE parsing found the group icon and
+  eight byte-identical source frames, no manifest override, and the same x64
+  GUI subsystem/system-only imports. The updated executable is 474,624 bytes;
+  [validation evidence](VALIDATION.md) identifies its hash and final package.
+- Prior user-confirmed portable runtime evidence is reused for unchanged
+  application behavior. Windows native APIs successfully extracted the eye
+  at 16/32/64 pixels without executing the application. The lead inspected
+  this preview. Final package checks and all ZIP payload hashes passed.
+- The local portable v0.1 candidate is complete and ready to copy to a stable
+  folder. Explorer's visible cached icon and the broader remaining manual
+  release checks remain unverified, with exact follow-up steps recorded.
+  Runtime code is unchanged by the resource-only follow-up; no new application
+  launch is claimed for it. No release was published or tagged.

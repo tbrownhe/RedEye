@@ -17,7 +17,8 @@ or visible main window. Nothing is registered for sign-in until you enable it.
 
 ## Build from source
 
-Use stable Rust with the native Windows x64 MSVC toolchain and C++ build tools.
+Use stable Rust with the native Windows x64 MSVC toolchain, C++ build tools,
+and Windows SDK resource compiler (`rc.exe`).
 Rust/Cargo 1.99.1 was verified for this project:
 
 ```powershell
@@ -98,3 +99,7 @@ explicitly handles cleanup errors; destructors provide fallback handle
 cleanup. Tests cover the flag matrix, failed transitions, and icon bounds;
 external Windows observations are also required. Icons are embedded, with
 [reproducible drawing source](docs/ICONS.md).
+
+The build also uses `winresource` 0.1.34 with default features disabled and
+`version_check` to embed the active eye as the executable's Explorer/shortcut
+icon. These are build-only dependencies; both tray states remain embedded.

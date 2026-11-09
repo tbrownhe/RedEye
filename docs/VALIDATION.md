@@ -415,9 +415,9 @@ usable from the copied executable without Cargo or loose assets.
 The user confirmed this procedure for SHA256
 `11AE78034EAB953983A4EDA2CA27A244BA0DCFE72617A1474B42FCA9D7B4CD68`.
 This is user summary confirmation, not an agent-run UI test or raw powercfg
-transcript. The upcoming executable-icon resource build requires a new hash,
-PE resource verification, and brief icon/launch smoke evidence before final
-packaging. Unchanged functional evidence can be reused with that distinction.
+transcript. The subsequent resource-only build, native icon extraction, and
+reuse of unchanged functional evidence are detailed in the final section
+below. No application launch is claimed for the resource-only update.
 
 Actual sign-in launch, Explorer restart, cross-session isolation, Windows 10,
 DPI/monitor changes, lock/explicit sleep, forced termination, and long-duration
@@ -432,3 +432,58 @@ known RedEye test process and verify its requests disappear; note shell icon
 cleanup delay. Observe CPU/memory after settling and during a longer idle
 period without injecting input or keep-awake polling, recording duration and
 environment rather than treating the earlier 3-second debug sample as coverage.
+
+## Final executable icon and package — 2026-11-08
+
+Status: the original active eye is now embedded as the native executable icon.
+Independent final review found no defects. Required checks, resource/native
+extraction verification, and final packaging passed. Runtime source is unchanged
+from the user-tested portable GUI release (`0ce780f`); its functional native
+evidence is reused. Actual Explorer cache appearance of the resource-updated
+executable remains a manual refresh check, not an additional claimed UI pass.
+The remaining release-readiness limitations above still apply; this is a
+portable release candidate, not full Windows 10/11 validation.
+
+Final `target/release/redeye.exe` and packaged `RedEye.exe`: 474,624 bytes,
+SHA256 `2B6555F4D449CA94EE2AC71B9FAD756DBB8B49CFCDB4DBAF8CE9564FB5CD272D`.
+This supersedes the pre-resource executable and provisional ZIP. The package
+contains exactly these three files under `RedEye-v0.1.0-windows-x64`:
+
+- `RedEye.exe`, matching the final release hash above.
+- `README.txt`, 4,945 bytes, standalone installation/use/build/removal and
+  validation-status instructions; no source-local links to missing files.
+- `SHA256SUMS.txt`, hashes of the executable and README.
+
+Final archive: `dist/RedEye-v0.1.0-windows-x64.zip`, 322,557 bytes,
+SHA256 `6C0E1FBACFA91557EDD5D36B4AFF8289E6185E676F5CFEE1C42C1200C8C69A4B`.
+The validator reopened the ZIP and hashed each payload; all three match the
+package directory. No loose icons, DLLs, Cargo, or SDK files are runtime content.
+Nothing was published, tagged, uploaded, or code-signed.
+
+| Check | Actual result | Status |
+|---|---|---|
+| `cargo fmt --check` | Exit 0 | Pass |
+| `cargo check --locked` | Exit 0 | Pass |
+| `cargo clippy --locked --all-targets -- -D warnings` | Exit 0, no lint findings | Pass |
+| `cargo test --locked` | Seven tests passed | Pass |
+| `cargo build --release --locked` | Exit 0; expected hash unchanged | Pass |
+| SDK resource compiler discovery | Build log selects SDK 10.0.26100.0 x64 `rc.exe`, although `rc.exe` is not on the shell PATH; no PATH changes | Pass |
+| Final PE resource directory | One `RT_GROUP_ICON` ID 1 and eight `RT_ICON` resources, sizes 16/20/24/32/48/64/128/256; 32-bit RGBA PNG bytes exactly equal original active ICO frames; no `RT_MANIFEST` resource | Pass |
+| PE header/imports | Still x64 PE32+, Windows GUI subsystem 2; same six Windows system imports as above, no separate CRT DLL | Pass |
+| Native Windows icon extraction | `ExtractIconExW` extracted small 16px and large 32px icons; resource-only mapping plus `LoadImageW` extracted 64px; original eye visually confirmed | Pass: read-only native API evidence |
+| Runtime source/dependency scope | No `src` diff from `0ce780f`; runtime crates remain `windows-sys 0.61.2` and `windows-link 0.2.1`; build-only additions are `winresource 0.1.34` with default features disabled and `version_check 0.9.5` | Pass |
+| Package/docs | Final copied hash, three ZIP payloads, checksums, current SDK/build/icon instructions, and local source-document links verified | Pass |
+
+PE parsing read file bytes only. Native icon checks used `ExtractIconExW` and
+`LoadLibraryExW` with `LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE`,
+then loaded icon resource ID 1. These operations did not execute the application
+entry point, launch a process, control UI, or write settings/registration. Owned
+HICONs and the resource mapping were explicitly released. The preview at
+`portable-test/embedded-exe-icon.png` shows Shell-extracted 16/32px icons and the
+64px resource image; it is validation evidence, not runtime package content.
+
+For the remaining Explorer cache check, refresh the folder or inspect a copy
+under a fresh executable filename if Windows retains an old generic icon.
+Confirm the original active eye appears. The read-only native extraction and
+exact frame comparison establish that Windows can obtain the intended icon;
+no additional user runtime claim is inferred for this last resource-only build.

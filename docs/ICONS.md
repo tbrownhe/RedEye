@@ -41,6 +41,9 @@ Windows small-icon metric, bounds-check its directory entry, and decode it
 with `CreateIconFromResourceEx`. Release the resulting owned `HICON` with
 `DestroyIcon` once it is no longer used. The preview is documentation, not a
 runtime asset. Milestone 2 uses the active icon; milestone 3 integrates both.
+The active ICO is also embedded as the executable's native application icon
+resource, so Explorer and shortcuts can select its full set of sizes. This
+build-time resource is separate from the tray's two runtime visual states.
 
 State must also remain textual: `RedEye — Awake` / `RedEye — Sleep allowed`
 tooltips and the `Stay awake` menu checkmark. Left-click toggles; right-click
