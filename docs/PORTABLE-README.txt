@@ -1,4 +1,4 @@
-RedEye {{VERSION}} - Windows 10/11 x64 portable release candidate
+RedEye {{VERSION}} - Windows 10/11 x64 portable release
 Source commit: {{COMMIT}}
 Repository and validation evidence: https://github.com/tbrownhe/RedEye
 
