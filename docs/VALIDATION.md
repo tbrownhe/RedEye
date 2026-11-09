@@ -615,3 +615,58 @@ later documentation commit. Final bootstrap merge state is recorded on
 [PR #1](https://github.com/tbrownhe/RedEye/pull/1), and subsequent PR/main runs
 are recorded by [CI](https://github.com/tbrownhe/RedEye/actions/workflows/ci.yml).
 All previously listed unperformed native release checks remain unperformed.
+
+## Tagged draft-release automation — 2026-11-08 local checkpoint
+
+Status: separate final review found no defects; local validation passed on
+`ci/tagged-draft-releases`. Protected PR/main CI, manual preview, owner RC tag,
+draft creation, and uploaded release assets remain pending. The validator made
+no remote writes, tags, releases, app launches, GUI actions, or registry changes.
+
+The version is `0.1.0-rc.1`; the four dependency packages and runtime source/build
+configuration are unchanged. The RC executable has changed version metadata,
+with no runtime behavior change. Its exact GUI runtime has not been tested;
+prior functional evidence is reused and outstanding Windows checks remain open.
+
+| Local check | Result |
+|---|---|
+| Format/check/Clippy | Required locked commands exit 0 |
+| Tests/release build | Seven tests pass; locked optimized build succeeds |
+| Product/File version | Both exactly `0.1.0-rc.1` through Windows version-resource inspection |
+| Workflow/script validation | Previously checksum-verified actionlint 1.7.12 accepts both workflows; AST parsing accepts both helpers and the entire inline publisher |
+| Release gate | Fifteen independent mocked boundary cases pass: valid tag/manual-main succeed; wrong tag/ref/event, feature manual, nonancestor, wrong CI SHA/event/path/conclusion/status/branch/repository, invalid SemVer reject without success outputs |
+| Actual packager | Valid RC package succeeds; leading-zero SemVer, different version, malformed commit, workspace-root output, and traversal outside allowed output roots reject |
+| Publisher verification prefix | Valid package passes identity/checksum/ZIP checks; corrupted copied exe rejects before remote operations |
+| ZIP/integrity | Exactly exe/README/internal sums; all internal/external hashes match; standalone/ZIP exe bytes agree; version/commit placeholders resolved |
+| PE inspection | x64 GUI subsystem 2, six Windows system imports/no separate CRT; group 1/eight original-active 32-bit frames byte-identical to ICO; no manifest resource |
+| Tag policy | Exact local active `refs/tags/v*` creation/update/deletion policy; only owner User `97360755` has always bypass; main policies unchanged |
+| Documentation/scope | All 47 local Markdown links resolve; whitespace clean; no runtime source, main rules, CODEOWNERS, or cleanup-setting changes |
+
+Local RC executable: 474,624 bytes, SHA256
+`D6BB4B049F2DF9EDF7B2852C5EC4BB53B803608681D9CDD6B6B3A8AD42935FBE`.
+The validator's scratch ZIP SHA256 is
+`339A65EAF0E673A0A69946E17919222D6C346040F8D859B16CC19DCF29E73702`.
+Its README stamps base HEAD `900b29ea5258af336520cc4f150693b5221b0c5d`
+because validation preceded the release-change commit. This is a working-tree
+fixture, not evidence of an approved RC build from that base commit. Each
+packaging run's hashes are checked independently; ZIP hashes can differ.
+
+Mocks executed the real gate with in-process Git/GitHub/Cargo functions that
+cannot access the network or mutate refs, including checking the exact main-push
+CI endpoint. Publisher execution stopped before tag/release API calls; its full
+script was only parsed. Actual packaging used a process-only execution-policy
+bypass and wrote ignored fixtures. No permanent PATH or policy changed.
+
+The lead supplied remote readback for active
+[release-tags ruleset 26835818](https://github.com/tbrownhe/RedEye/rules/26835818):
+tag target, `refs/tags/v*`, creation/update/deletion restrictions, only owner
+User `97360755` always bypass. Both main rulesets remained byte-equivalent,
+their five effective rules unchanged, and automatic merged-branch cleanup
+remained enabled. This is lead-supplied evidence, not a validator API mutation.
+
+Remote completion requires successful exact-head PR CI, merge/main-push CI,
+manual preview with no tag/release, then the authorized exact owner RC tag and
+an unpublished prerelease draft with three verified assets/checksum layers.
+Tag/main SHA and successful main-CI evidence must agree. The draft stays
+unpublished until the owner manually chooses Publish. Local mocks/builds prove
+neither these remote outcomes nor additional native Windows coverage.

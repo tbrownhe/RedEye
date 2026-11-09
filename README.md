@@ -37,6 +37,11 @@ complete the product baseline.
 
 ## Install and run
 
+Download **RedEye.exe** or **RedEye-windows-x64.zip** from
+[GitHub Releases](https://github.com/tbrownhe/RedEye/releases). Release candidates
+are marked **Pre-release**. Drafts are visible to maintainers until manually
+published; CI artifacts are temporary developer downloads.
+
 Copy `RedEye.exe` from the portable package to a stable folder, such as
 `%LOCALAPPDATA%\RedEye`, and launch it. No installer, administrator privileges,
 Cargo, or external icon files are required. The release build has no console
@@ -128,14 +133,35 @@ The intended cleanup setting is recorded in
 manual dispatch. It uses Windows Server 2025 with Visual Studio 2026 and pinned
 Rust 1.99.1 to check formatting, compilation, Clippy, tests, and the release
 build. Each successful run provides a `RedEye-windows-x64` artifact containing
-the executable and SHA-256 checksum, retained for seven days. These are CI
-builds, not automatically published releases.
+the executable, portable ZIP, and SHA-256 checksums, retained for seven days.
+These are CI builds, not automatically published releases.
 
 GitHub may require maintainer approval before running a first-time external
 contributor's workflow. That approval is separate from approval to merge the
 PR. Fork builds use read-only permissions and no repository secrets. CI does
 not replace the native tray, power-request, sign-in, and OS coverage checks in
 [the validation evidence](docs/VALIDATION.md).
+
+## Releases
+
+The owner creates a version tag, such as `v0.1.0-rc.1`, on an approved commit
+already merged to `main`. The tag must exactly match the version in
+`Cargo.toml`. Version tags are restricted to `@tbrownhe`; the main-branch PR
+and CI requirements still apply before tagging.
+
+[The release workflow](.github/workflows/release.yml) requires successful
+main-push CI for that exact commit, rebuilds on Windows, and creates an
+unpublished draft with three downloads: `RedEye.exe`, `RedEye-windows-x64.zip`,
+and `SHA256SUMS.txt`. The ZIP contains the executable, a versioned usage README,
+and internal checksums. A version containing a prerelease suffix, such as
+`-rc.1`, is marked as a prerelease. The owner checks the draft and manually
+publishes it; published releases appear on the repository's Releases page.
+
+A manual run of **Draft release** from `main` previews the same package as a
+seven-day Actions artifact. It creates neither a tag nor a release. See
+[the release procedure](docs/WORKFLOW.md#versioned-draft-releases) for version
+bumps, checks, and recovery from an incomplete draft. Native checks that remain
+unperformed are listed in [validation evidence](docs/VALIDATION.md).
 
 ## Check
 

@@ -554,3 +554,74 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   with attached binaries are the recommended distribution route; this change
   does not add release publishing, create a tag, or publish a release. Existing
   seven-day CI artifacts and native release-validation limits are unchanged.
+
+## Versioned draft releases
+
+The release plan adds distribution automation without changing runtime code.
+The first version is `0.1.0-rc.1`, identifying the outstanding native release
+checks honestly. A draft is never public until the owner chooses **Publish**.
+
+1. Bump the package version in `Cargo.toml` and its package entry in
+   `Cargo.lock` through a reviewed PR. Keep dependency versions unchanged
+   unless separately justified. Complete required CI and merge to `main`.
+2. Wait for that exact main commit's successful push run of `ci.yml`.
+   Optionally dispatch **Draft release** from `main` first: this read-only
+   preview builds and uploads an artifact without creating tags or releases.
+3. From a clean, synchronized checkout, create an annotated tag matching
+   `v<Cargo version>` on the approved commit, then push that tag as the owner.
+   For this candidate the tag is `v0.1.0-rc.1`. Do not move existing tags.
+4. Inspect the successful tag run, draft notes, and all three attached assets.
+   Compare external hashes for the executable and ZIP; check the ZIP's hashes
+   for its executable and README. Use the native matrix in
+   [VALIDATION.md](VALIDATION.md) and preserve all unperformed checks as such.
+5. The owner manually chooses **Publish** when ready. Candidate versions are
+   marked prerelease. The README links to the Releases list because GitHub's
+   latest stable-release URL excludes drafts and prereleases.
+
+The reviewed [tag ruleset](../.github/rulesets/release-tags.json) restricts
+creation, update, and deletion of `v*` tags to `@tbrownhe`. This owner exception
+is for tags only; neither main ruleset changes. Repository settings and ruleset
+JSON files record desired policy; committing them does not apply GitHub settings.
+The lead applied and read back active ruleset
+[26835818](https://github.com/tbrownhe/RedEye/rules/26835818) on 2026-11-08;
+both main rulesets remained byte-equivalent in API readback, all five effective
+main rules remained present, and automatic merged-branch cleanup stayed enabled.
+
+The release build runs with read-only contents permission and Actions read
+permission to verify a successful **main push** of the specific CI workflow
+for its exact SHA, plus ancestry on `origin/main`. Tag/version mismatch, missing
+CI, or a manual dispatch from another branch fails before packaging. The
+pinned Windows/MSVC toolchain and locked dependencies match PR CI. Both CI and
+release builds exercise [the same packager](../tools/package-release.ps1).
+Version metadata is checked against the built executable before packaging.
+
+Only a separate tag-only job receives contents write permission. It downloads
+the same run's artifact, checks the exact three filenames and hashes, rechecks
+the remote tag's commit, and invokes `gh release create` with explicit
+`--draft --verify-tag --target <SHA>`. It does not check out source or execute
+repository scripts or the executable. Actions are pinned by full commit SHA;
+concurrent runs for a ref serialize. Manual previews never enter this job.
+
+Release assets have stable names: `RedEye.exe`, `RedEye-windows-x64.zip`, and
+`SHA256SUMS.txt`. The ZIP contains exactly `RedEye.exe`, `README.txt`, and its
+own `SHA256SUMS.txt`; internal hashes cover the first two files, while external
+hashes cover the executable and ZIP. The usage template is
+[PORTABLE-README.txt](PORTABLE-README.txt). No signing certificate is supplied.
+
+If a draft already exists, the workflow fails rather than changing it. A failed
+upload may leave an incomplete draft. Inspect its assets first; if it is only
+an incomplete unpublished draft, remove that draft manually, leave the tag in
+place, and rerun the failed workflow. Never delete a published release, move a
+tag, or overwrite assets as an automatic retry. A missing main CI success is
+resolved by waiting for CI and rerunning, not by bypassing the gate.
+
+Official references verified for this design:
+[GitHub CLI release creation](https://cli.github.com/manual/gh_release_create),
+[workflow-run filters](https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2026-03-10),
+and [repository rulesets](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10).
+Automation review and evidence are recorded in [VALIDATION.md](VALIDATION.md);
+build results do not establish Windows 10 or additional native behavior.
+The windows engineer owns functional files, a separate reviewer checks the
+integrated diff, and the release validator records checks. The lead uses the
+documentation-only exception for README/workflow prose and applies the reviewed
+remote settings; no application-code workflow exception is used.
