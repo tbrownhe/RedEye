@@ -129,6 +129,37 @@ recursively unless the lead explicitly assigns that responsibility.
 Use the existing session or task description for these briefs. Do not create
 a ticket hierarchy, mandatory approval ceremony, or a document for every edit.
 
+## Repository changes and CI
+
+Use a feature branch and a PR to `main`, including for changes made by agents.
+`@tbrownhe` owns every path through [CODEOWNERS](../.github/CODEOWNERS), including
+that file, CI, and rule definitions. External contributions require that owner's
+approval; new commits dismiss stale approvals. Review conversations must be
+resolved before merging.
+
+Two rulesets target only `refs/heads/main`:
+
+- [main-integrity](../.github/rulesets/main-integrity.json) requires a PR,
+  resolved conversations, and an up-to-date successful `Windows CI` check from
+  the GitHub Actions app. It blocks deletion/force pushes and has no bypass.
+- [owner-review](../.github/rulesets/owner-review.json) requires one approval and
+  code-owner review. Only `@tbrownhe` has a PR-only review bypass, as explicitly
+  chosen by the user because GitHub does not permit self-approval. It cannot
+  bypass the independent integrity/CI ruleset or permit direct pushes.
+
+These JSON files record the intended GitHub settings for review. Committing
+them does not apply them automatically; apply changes through repository
+administration and verify the effective server-side rules afterward.
+
+The [CI workflow](../.github/workflows/ci.yml) uses the stable check name
+`Windows CI`. Coordinate any rename with the required-check rule. It runs the
+required Rust checks and release build on `windows-2025-vs2026` with Rust
+`1.99.1-x86_64-pc-windows-msvc`, read-only contents permissions, and no persisted
+checkout credentials. First-party actions are pinned to verified commit SHAs.
+PR runs cancel superseded runs; each main/manual run gets an independent group.
+Successful runs upload only the executable and checksum for seven days.
+No application GUI or power behavior is claimed from CI's unit/build checks.
+
 ## Milestones and exit gates
 
 | Stage | Work | Evidence required to complete |
@@ -296,6 +327,8 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Plan static CRT linkage and the GUI subsystem for the portable release | Read-only `dumpbin` inspection found `VCRUNTIME140.dll` in the debug imports. Rust supports [static CRT linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes) on x64 MSVC, configured through [target rustflags](https://doc.rust-lang.org/cargo/reference/config.html#targettriplerustflags). The [windows_subsystem attribute](https://doc.rust-lang.org/reference/runtime.html#the-windows_subsystem-attribute) removes the release console. Final imports/subsystem and standalone behavior must be verified after milestone 4 completes. |
 | 2026-11-08 | Initialize system-DPI awareness before any window, warning, or icon metric | Default DPI-unaware metrics could select a 16-pixel source even on a scaled desktop. [SetProcessDPIAware](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setprocessdpiaware) is supported since Vista and avoids requiring newer Windows 10 APIs; tolerate existing awareness and check initialization success. Microsoft [prefers a manifest](https://learn.microsoft.com/en-us/windows/win32/hidpi/setting-the-default-dpi-awareness-for-a-process), but this small single-threaded app can initialize before all UI without adding a build script. System-DPI-at-launch is the supported approach; multi-monitor scaling remains a documented validation limit. |
 | 2026-11-08 | Embed the existing active eye as a PE application-icon resource, as requested by the user | [winresource 0.1.34](https://docs.rs/crate/winresource/0.1.34) with default features disabled adds only `version_check` 0.9.5 at build time, with no new runtime dependencies. Its [official source](https://github.com/BenjaminRi/winresource) verifies `set_icon`/`compile` and Windows SDK discovery. The crate declares no MSRV; the project's actual Rust 1.99.1 was tested. A small `build.rs` fails on resource-compiler errors and tracks source ICO/tool overrides. SDK `rc.exe` is a build requirement, not a runtime dependency. All eight [icon resource](https://learn.microsoft.com/en-us/windows/win32/menurc/icon-resource) sizes are retained. |
+| 2026-11-08 | Add PR-based development, owner review, and mandatory Windows CI as independent main-branch rulesets | [GitHub rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets) support layered requirements. The user chose a PR-only review bypass for `@tbrownhe`; PR/CI, conversation resolution, and force-push/deletion protection have no bypass. [CODEOWNERS](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) assigns every path to the owner. Source JSON is applied through the [REST rules API](https://docs.github.com/en/rest/repos/rules?apiVersion=2026-03-10), not by CI. |
+| 2026-11-08 | Run checks and release builds on `windows-2025-vs2026` with Rust 1.99.1, using SHA-pinned first-party actions | The [official image inventory](https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-VS2026-Readme.md) supplies x64 MSVC/SDK and Rust tools. Official tag refs and action manifests verified checkout v7.0.1 (`3d3c42e5aac5ba805825da76410c181273ba90b1`) and upload-artifact v7.0.2 (`cf430e030ddbb5b0abf93d22962f4752f3646cd9`). No extra app crates, cache action, third-party toolchain action, publishing, or privileged PR event are needed. |
 
 Add a short row for a material decision, including source links when verifying
 external APIs. Revisit a choice when evidence changes; avoid speculative design.
@@ -469,3 +502,27 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   specialist TOML files parse with only intended instruction-text changes.
   Reference scans are clear and release artifact hashes are unchanged. Rust
   builds/native tests were not repeated for this documentation-only change.
+
+## PR and CI setup — 2026-11-08
+
+- Applied and read back both active GitHub rulesets: main-integrity
+  [26833257](https://github.com/tbrownhe/RedEye/rules/26833257) and owner-review
+  [26833258](https://github.com/tbrownhe/RedEye/rules/26833258). The five effective
+  rules match the reviewed JSON, including no CI/integrity bypass and only the
+  explicitly chosen owner PR review exception. Existing read-only workflow
+  permissions and first-time contributor workflow approval were preserved.
+- Used `ci/protect-main` and [PR #1](https://github.com/tbrownhe/RedEye/pull/1)
+  to install the workflow and global CODEOWNERS mapping. The owner exception
+  supports this owner-authored bootstrap; it does not permit direct main pushes
+  or merging a head without successful CI.
+- Separate review found no defects. Local Rust checks, seven tests, release
+  build, exact policy/checksum checks, and verified actionlint 1.7.12 passed.
+  The [first hosted run](https://github.com/tbrownhe/RedEye/actions/runs/42572845456)
+  independently passed all checks on the documented Windows/MSVC runner. The
+  validator checked the downloaded executable/checksum, GUI/x64 metadata,
+  system-only imports, and original icon resources without running the app.
+- [Validation evidence](VALIDATION.md) identifies the exact tested head,
+  artifact hashes, and unchanged native-test limitations. Later documentation
+  commits must pass their own CI before merge. [GitHub CI history](https://github.com/tbrownhe/RedEye/actions/workflows/ci.yml)
+  records current per-commit PR/main results; build success does not substitute
+  for the native Windows manual matrix.

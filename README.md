@@ -109,6 +109,28 @@ To remove RedEye, disable **Launch at sign-in**, choose **Exit**, and delete the
 copied executable. Optionally remove only the `KeepDisplayOn` value from the
 settings key. No service, scheduled task, or machine-wide setting is installed.
 
+## Contributing and CI
+
+Fork the repository or work on a feature branch, then open a pull request to
+`main`. Contributions require a passing **Windows CI** check and approval from
+`@tbrownhe`, the code owner for every path. New commits dismiss stale approvals,
+and review conversations must be resolved. Direct changes, force pushes, and
+deletion of `main` are blocked. The owner can bypass the review requirement
+through a PR; the PR and CI requirements still apply to the owner.
+
+[CI](.github/workflows/ci.yml) runs on PRs to `main`, pushes to `main`, and
+manual dispatch. It uses Windows Server 2025 with Visual Studio 2026 and pinned
+Rust 1.99.1 to check formatting, compilation, Clippy, tests, and the release
+build. Each successful run provides a `RedEye-windows-x64` artifact containing
+the executable and SHA-256 checksum, retained for seven days. These are CI
+builds, not automatically published releases.
+
+GitHub may require maintainer approval before running a first-time external
+contributor's workflow. That approval is separate from approval to merge the
+PR. Fork builds use read-only permissions and no repository secrets. CI does
+not replace the native tray, power-request, sign-in, and OS coverage checks in
+[the validation evidence](docs/VALIDATION.md).
+
 ## Check
 
 ```powershell
