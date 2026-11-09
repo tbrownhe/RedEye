@@ -286,6 +286,7 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Evaluate `windows` 0.62.2 and `tray-icon` 0.26.1; prefer direct native tray bindings for this Windows-only utility | [windows manifest](https://docs.rs/crate/windows/0.62.2/source/Cargo.toml.orig) requires Rust 1.82 and more support crates. [tray-icon manifest](https://github.com/tauri-apps/tray-icon/blob/tray-icon-v0.26.1/Cargo.toml) requires Rust 1.90 and adds menu/channel/error helpers while still needing an event loop. Its [Windows source](https://github.com/tauri-apps/tray-icon/blob/tray-icon-v0.26.1/src/platform_impl/windows/mod.rs) supports distinct left/right events, so it is viable; direct bindings keep error checks and owning-thread dispatch explicit. |
 | 2026-11-08 | Use a hidden top-level window and `GetMessageW`, with no app-state pointer in the window procedure | [GetMessageW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew) blocks without polling and has distinct error/quit/message results. Dispatch must avoid mutable aliasing during reentrant native callbacks. [Shell_NotifyIconW](https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyiconw) supports native icon/menu events on Windows 10/11. |
 | 2026-11-08 | Original geometric eye icons use PNG-compressed ICO frames at 16/20/24/32/48/64/128/256 pixels | `ux_designer` inspected the reference and produced deterministic drawing source and actual-size previews. Active/inactive differ in brightness and lens shape as well as color. See [icon notes](ICONS.md); native tray/DPI verification is still required. |
+| 2026-11-08 | Main coordinates typed tray events, effective power state, and display preference in milestone 3 | A blocking `next_event` ends the tray borrow before the OS transition. Failed power calls preserve state/visuals and report a recoverable native error. Partial visual update failures exit through explicit cleanup to avoid leaving misleading UI. Checkmarks use checked [SetMenuItemInfoW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setmenuiteminfow) calls. |
 
 Add a short row for a material decision, including source links when verifying
 external APIs. Revisit a choice when evidence changes; avoid speculative design.
@@ -359,3 +360,22 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   render only the successfully applied state. No new dependencies are needed.
   Preferences, startup registration, and single-instance handling remain
   milestone 4 work; distribution remains milestone 5.
+
+## Milestone 3 checkpoint — 2026-11-08
+
+- Awake and display controls, both embedded icon states, exact tooltips, and
+  native checkmarks are implemented. Main applies the OS transition before
+  committing the preference and rendering. Failed transitions preserve prior
+  state and report a recoverable error; failed rendering exits with cleanup.
+- Independent review found no defects. Specialist validation passed all Rust
+  checks, four focused tests, and the debug build. Dependencies/assets did not
+  change. Failure evidence uses injected returns, not a real OS API failure.
+- User confirmed the native interaction/UI procedure and supplied eight
+  ordered `powercfg /requests` observations: SYSTEM only; SYSTEM + DISPLAY;
+  neither after disabling; neither while changing display off and on inactive;
+  both after enabling; SYSTEM only after clearing display; neither after Exit.
+  Console transitions agree, including retained inactive preference and
+  explicit cleanup. **Milestone 3 is complete on Windows 11.**
+- Milestone 4 now adds per-user preference persistence, opt-in startup,
+  session/user single-instance protection, and Explorer icon recovery. The
+  final two stages remain unverified until their own checks are recorded.

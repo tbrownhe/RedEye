@@ -138,4 +138,19 @@ mod tests {
         assert!(!request.is_active());
         assert_eq!(request.applied_flags, ES_CONTINUOUS);
     }
+
+    #[test]
+    fn failed_display_changes_preserve_the_previous_system_and_display_requests() {
+        let mut request = PowerRequest::new();
+        request.apply_with(true, false, |_| ES_CONTINUOUS).unwrap();
+        assert!(request.apply_with(true, true, |_| 0).is_err());
+        assert_eq!(request.applied_flags, ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+
+        request.apply_with(true, true, |_| ES_CONTINUOUS).unwrap();
+        assert!(request.apply_with(true, false, |_| 0).is_err());
+        assert_eq!(
+            request.applied_flags,
+            ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+        );
+    }
 }

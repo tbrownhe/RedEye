@@ -8,8 +8,8 @@ use windows_sys::{
         System::LibraryLoader::GetModuleHandleW,
         UI::{
             Shell::{
-                NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_SETFOCUS,
-                NIM_SETVERSION, NIN_SELECT, NOTIFYICON_VERSION_4, NOTIFYICONDATAW,
+                NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY,
+                NIM_SETFOCUS, NIM_SETVERSION, NIN_SELECT, NOTIFYICON_VERSION_4, NOTIFYICONDATAW,
                 Shell_NotifyIconW,
             },
             WindowsAndMessaging::*,
@@ -21,6 +21,8 @@ use windows_sys::{
 const CLASS_NAME: *const u16 = w!("RedEye.TrayWindow");
 const ICON_ID: u32 = 1;
 const EXIT_ID: usize = 1;
+const AWAKE_ID: usize = 2;
+const DISPLAY_ID: usize = 3;
 const TRAY_MESSAGE: u32 = WM_APP + 1;
 const WAKE_MESSAGE: u32 = WM_APP + 2;
 const KEY_SELECT: u32 = NIN_SELECT + 1;
@@ -29,6 +31,12 @@ const KEY_SELECT: u32 = NIN_SELECT + 1;
 enum Action {
     LeftClick,
     ContextMenu,
+}
+
+pub enum Event {
+    ToggleAwake,
+    ToggleDisplay,
+    Exit,
 }
 
 thread_local! {
@@ -43,21 +51,23 @@ pub struct Tray {
     class_registered: bool,
     window: HWND,
     menu: HMENU,
-    icon: HICON,
+    active_icon: HICON,
+    inactive_icon: HICON,
     icon_registered: bool,
 }
 
 impl Tray {
-    pub fn new() -> Result<Self, String> {
+    pub fn new(active: bool, keep_display_on: bool) -> Result<Self, String> {
         let mut tray = Self {
             instance: ptr::null_mut(),
             class_registered: false,
             window: ptr::null_mut(),
             menu: ptr::null_mut(),
-            icon: ptr::null_mut(),
+            active_icon: ptr::null_mut(),
+            inactive_icon: ptr::null_mut(),
             icon_registered: false,
         };
-        if let Err(error) = tray.initialize() {
+        if let Err(error) = tray.initialize(active, keep_display_on) {
             return match tray.close() {
                 Ok(()) => Err(error),
                 Err(cleanup) => Err(format!("{error}\nInitialization cleanup: {cleanup}")),
@@ -66,7 +76,7 @@ impl Tray {
         Ok(tray)
     }
 
-    fn initialize(&mut self) -> Result<(), String> {
+    fn initialize(&mut self, active: bool, keep_display_on: bool) -> Result<(), String> {
         // SAFETY: Pointers are null or valid initialized structures/static
         // NUL-terminated strings. Each owned handle is saved immediately for
         // cleanup on this thread. Win32 copies the registration strings.
@@ -111,6 +121,9 @@ impl Tray {
             for (flags, id, label) in [
                 (MF_STRING | MF_GRAYED, 0, w!("RedEye")),
                 (MF_SEPARATOR, 0, ptr::null()),
+                (MF_STRING, AWAKE_ID, w!("Stay awake")),
+                (MF_STRING, DISPLAY_ID, w!("Keep display on")),
+                (MF_SEPARATOR, 0, ptr::null()),
                 (MF_STRING, EXIT_ID, w!("Exit")),
             ] {
                 if AppendMenuW(self.menu, flags, id, label) == 0 {
@@ -118,13 +131,12 @@ impl Tray {
                 }
             }
         }
-        self.icon = load_icon(include_bytes!("../assets/redeye-active.ico"))?;
-        let mut data = self.icon_data();
-        data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_SHOWTIP;
+        self.active_icon = load_icon(include_bytes!("../assets/redeye-active.ico"))?;
+        self.inactive_icon = load_icon(include_bytes!("../assets/redeye-inactive.ico"))?;
+        self.update_checks(active, keep_display_on)?;
+        let mut data = self.visual_data(active);
+        data.uFlags |= NIF_MESSAGE;
         data.uCallbackMessage = TRAY_MESSAGE;
-        data.hIcon = self.icon;
-        let tooltip: Vec<u16> = "RedEye — Awake".encode_utf16().collect();
-        data.szTip[..tooltip.len()].copy_from_slice(&tooltip);
         // SAFETY: data is initialized with its correct size and live handles.
         // Shell_NotifyIcon copies data synchronously.
         unsafe {
@@ -140,8 +152,22 @@ impl Tray {
         Ok(())
     }
 
-    pub fn run(&mut self) -> Result<(), String> {
+    /// Blocks on this owning thread until a user command or exit arrives.
+    pub fn next_event(&mut self) -> Result<Event, String> {
         loop {
+            // Drain callbacks before blocking, including any queued while a
+            // modal menu was open. Drop the queue borrow before native calls.
+            let action = ACTIONS.with(|actions| actions.borrow_mut().pop_front());
+            match action {
+                Some(Action::LeftClick) => return Ok(Event::ToggleAwake),
+                Some(Action::ContextMenu) => {
+                    if let Some(event) = self.show_menu()? {
+                        return Ok(event);
+                    }
+                    continue;
+                }
+                None => {}
+            }
             let mut message = MSG::default();
             // SAFETY: writable MSG, no window filter; this is the creating thread.
             let result = unsafe { GetMessageW(&mut message, ptr::null_mut(), 0, 0) };
@@ -150,7 +176,7 @@ impl Tray {
             }
             if result == 0 {
                 return if message.wParam == 0 {
-                    Ok(())
+                    Ok(Event::Exit)
                 } else {
                     Err("Tray event dispatch failed; RedEye is shutting down and clearing its power request.".into())
                 };
@@ -161,31 +187,10 @@ impl Tray {
                 TranslateMessage(&message);
                 DispatchMessageW(&message);
             }
-            loop {
-                let action = ACTIONS.with(|actions| actions.borrow_mut().pop_front());
-                match action {
-                    Some(Action::LeftClick) => {
-                        let _ = writeln!(
-                            std::io::stdout(),
-                            "RedEye: left activation received; awake state unchanged (milestone 2)."
-                        );
-                    }
-                    Some(Action::ContextMenu) => {
-                        let _ = writeln!(
-                            std::io::stdout(),
-                            "RedEye: right-click/context-menu received; awake state unchanged."
-                        );
-                        if self.show_menu()? {
-                            return Ok(());
-                        }
-                    }
-                    None => break,
-                }
-            }
         }
     }
 
-    fn show_menu(&self) -> Result<bool, String> {
+    fn show_menu(&self) -> Result<Option<Event>, String> {
         let mut point = POINT::default();
         // SAFETY: handles are live and point is writable. The modal menu may
         // reenter window_proc, which queues actions and never borrows self.
@@ -216,8 +221,61 @@ impl Tray {
             }
             // TPM_RETURNCMD zero means cancellation OR failure. Win32 documents
             // no reliable way to distinguish those outcomes.
-            Ok(selected as usize == EXIT_ID)
+            Ok(match selected as usize {
+                AWAKE_ID => Some(Event::ToggleAwake),
+                DISPLAY_ID => Some(Event::ToggleDisplay),
+                EXIT_ID => Some(Event::Exit),
+                _ => None,
+            })
         }
+    }
+
+    pub fn update(&mut self, active: bool, keep_display_on: bool) -> Result<(), String> {
+        self.update_checks(active, keep_display_on)?;
+        let data = self.visual_data(active);
+        // SAFETY: data references live owned icon/window handles; Shell copies
+        // the fully initialized structure. Caller exits after any failed render.
+        if unsafe { Shell_NotifyIconW(NIM_MODIFY, &data) } == 0 {
+            return Err("Windows could not update the RedEye tray state. RedEye will clear its power request and exit; restart it to try again.".into());
+        }
+        Ok(())
+    }
+
+    fn update_checks(&self, active: bool, keep_display_on: bool) -> Result<(), String> {
+        for (id, checked) in [(AWAKE_ID, active), (DISPLAY_ID, keep_display_on)] {
+            let info = MENUITEMINFOW {
+                cbSize: size_of::<MENUITEMINFOW>() as u32,
+                fMask: MIIM_STATE,
+                fState: if checked { MFS_CHECKED } else { MFS_UNCHECKED },
+                ..Default::default()
+            };
+            // SAFETY: The live popup menu contains these command IDs and info
+            // is initialized. No menu bar is attached; the next popup display
+            // reads these states afresh rather than requiring DrawMenuBar.
+            if unsafe { SetMenuItemInfoW(self.menu, id as u32, 0, &info) } == 0 {
+                return Err(os_error("SetMenuItemInfoW"));
+            }
+        }
+        Ok(())
+    }
+
+    fn visual_data(&self, active: bool) -> NOTIFYICONDATAW {
+        let mut data = self.icon_data();
+        data.uFlags = NIF_ICON | NIF_TIP | NIF_SHOWTIP;
+        data.hIcon = if active {
+            self.active_icon
+        } else {
+            self.inactive_icon
+        };
+        let tooltip = if active {
+            "RedEye — Awake"
+        } else {
+            "RedEye — Sleep allowed"
+        };
+        for (slot, character) in data.szTip.iter_mut().zip(tooltip.encode_utf16()) {
+            *slot = character;
+        }
+        data
     }
 
     fn icon_data(&self) -> NOTIFYICONDATAW {
@@ -254,11 +312,13 @@ impl Tray {
                     self.menu = ptr::null_mut();
                 }
             }
-            if !self.icon.is_null() {
-                if DestroyIcon(self.icon) == 0 {
-                    errors.push(os_error("DestroyIcon"));
-                } else {
-                    self.icon = ptr::null_mut();
+            for icon in [&mut self.active_icon, &mut self.inactive_icon] {
+                if !icon.is_null() {
+                    if DestroyIcon(*icon) == 0 {
+                        errors.push(os_error("DestroyIcon"));
+                    } else {
+                        *icon = ptr::null_mut();
+                    }
                 }
             }
             if self.class_registered {
@@ -328,11 +388,20 @@ unsafe extern "system" fn window_proc(
 }
 
 pub fn report_error(message: &str) {
+    show_error(&format!(
+        "{message}\n\nRedEye will exit. Restart it to try again."
+    ));
+}
+
+pub fn report_transition_error(message: &str) {
+    show_error(&format!(
+        "{message}\n\nThe previous awake state and display preference are unchanged. Retry the action, or use Exit to close RedEye."
+    ));
+}
+
+fn show_error(message: &str) {
     let _ = writeln!(std::io::stderr(), "RedEye: {message}");
-    let text: Vec<u16> = format!("{message}\n\nRedEye will exit. Restart it to try again.")
-        .encode_utf16()
-        .chain(Some(0))
-        .collect();
+    let text: Vec<u16> = message.encode_utf16().chain(Some(0)).collect();
     // SAFETY: text is NUL-terminated and alive for the synchronous call. Null
     // parent is valid and allows reporting initialization failures.
     unsafe {

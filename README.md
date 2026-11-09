@@ -2,8 +2,8 @@
 
 A small Windows 10/11 utility for preventing automatic idle sleep.
 
-Development is at **milestone 2: native tray integration**. Interactive
-toggling, preferences, and sign-in launch are later milestones. See
+Development is at **milestone 3: interactive power state**. Persistent
+preferences and sign-in launch are later milestones. See
 [the workflow](docs/WORKFLOW.md) for status and
 [validation evidence](docs/VALIDATION.md) for checks and remaining native tests.
 
@@ -17,12 +17,18 @@ cargo build --locked
 ```
 
 RedEye starts active and allows the display to turn off. Its original red eye
-icon appears in the notification area, possibly in the overflow. Right-click
-it for a native menu and choose **Exit** to remove the icon, explicitly clear
-the power request, and exit. Left-click currently prints a diagnostic and
-leaves power state unchanged; toggling belongs to milestone 3. The debug build
-still has a console. Closing that console terminates the process and relies
-on Windows releasing its thread-owned request.
+icon appears in the notification area, possibly in the overflow. Left-click
+toggles awake state. Right-click for a native menu:
+
+- **Stay awake** toggles automatic sleep prevention.
+- **Keep display on** also prevents display shutdown while awake. The checked
+  preference remains available while inactive, without holding a power request.
+- **Exit** removes the icon, explicitly clears the power request, and exits.
+
+Bright/dark eye icons, tooltips, and checkmarks show the effective state after
+Windows accepts a change. Display preference currently resets off on every
+launch. The debug build still has a console. Closing it terminates the process
+and relies on Windows releasing the thread-owned request.
 
 RedEye runs without elevation. Windows may require an Administrator terminal
 for the separate `powercfg /requests` diagnostic. It does not prevent locking,

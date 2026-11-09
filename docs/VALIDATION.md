@@ -195,3 +195,83 @@ Actual-size icon/DPI, Explorer restart, Windows 10, forced termination, locking,
 explicit sleep, and release-only checks remain unperformed. Interactive state,
 display preference, settings, startup, and single-instance checks are later
 milestones, not milestone 2 acceptance claims.
+
+## Milestone 3 — 2026-11-08
+
+Status: milestone 3 complete on the tested Windows 11 environment. Independent
+final code review found no defects; automated checks passed. The user confirmed
+the requested UI/click procedure and supplied the full native request matrix.
+The validator did not launch a process or send UI input during the user test.
+
+Environment: the same Windows 11 Home build 26300 x64 / Rust 1.99.1 MSVC
+environment. Artifact: frozen working-tree milestone 3,
+`target/debug/redeye.exe`, SHA256
+`806A86B7A6312D33DDF46661693D0AC84DAEA48451D358E54E69F9B47B534327`.
+The hash matched before and after checks. The unchanged lockfile still contains
+only the app, `windows-sys 0.61.2`, and `windows-link 0.2.1`; unchanged original
+icon evidence is reused.
+
+| Check | Actual result | Status |
+|---|---|---|
+| `cargo fmt --check` | Exit 0 | Pass |
+| `cargo check --locked` | Exit 0 | Pass |
+| `cargo clippy --locked --all-targets -- -D warnings` | Exit 0, no lint findings | Pass |
+| `cargo test --locked` | Four tests passed: flag matrix, failed awake transitions, failed display transitions, embedded-icon bounds | Pass |
+| `cargo build --locked` | Exit 0; expected artifact hash unchanged | Pass |
+| README usage, local documentation links, whitespace | README matches left-click/menu toggles, display preference, and nonpersistent milestone 3 behavior; all local links exist; `git diff --check` clean | Pass |
+| Native four-state matrix | Eight ordered user diagnostics match the transitions recorded below | Pass: user-observed |
+| Icons/tooltips/checkmarks, left/menu toggles, right-click dismissal | User confirmed the requested procedure; requested UI and single-action behavior remained consistent | Pass: user-observed |
+| Exit cleanup | Final diagnostic has no RedEye request; console reported explicit clear | Pass: user-observed |
+
+Final independent review traced typed tray events back to the main-thread power
+owner. OS success precedes committing the display preference and rendering icon,
+tooltip, and checkmarks. A recoverable power failure retains the last successful
+state and visuals; a render failure exits through explicit tray and power
+cleanup. Tests inject zero API returns for failure handling; no real native API
+failure was induced or claimed. There is no persistence or single-instance
+implementation in this milestone.
+
+The user supplied eight `powercfg /requests` outputs in the requested order.
+All listed requests identify the same RedEye debug executable path recorded for
+milestone 2; unrelated categories remained `None`:
+
+| Step | User-observed RedEye requests |
+|---|---|
+| Launch, active/display off | SYSTEM only |
+| Display on while active | SYSTEM and DISPLAY |
+| Disable while display preference on | None |
+| Display off while inactive | None |
+| Display on while inactive | None |
+| Enable with display preference on | SYSTEM and DISPLAY |
+| Display off while active | SYSTEM only |
+| Exit | None |
+
+Console output agreed: initial Awake/display may turn off; Awake/preference
+true; Sleep allowed/true; Sleep allowed/false; Sleep allowed/true; Awake/true;
+Awake/false; explicit final clear. The user's confirmation also covers the
+requested icon, tooltip, checkmark, left-click/menu, and right-click-dismissal
+checks. The artifact was unchanged; earlier automated results were reused.
+
+### Completed native procedure
+
+In normal PowerShell launch the artifact above. In a separate Administrator
+PowerShell, run `powercfg /requests` before launch, after each state below, and
+after Exit. Check the icon, tooltip, and menu alongside the external requests.
+
+| Active | Keep display on preference | Expected RedEye requests and UI |
+|---|---|---|
+| Yes | Off (launch default) | SYSTEM only; bright icon, Awake tooltip; Stay awake checked |
+| Yes | On | SYSTEM and DISPLAY; both menu options checked |
+| No | On | Neither request; dark icon, Sleep allowed tooltip; display option remains checked |
+| No | Off | Neither request; both menu options unchecked |
+
+While inactive, change the display preference and then enable again; verify
+the selected preference takes effect only when active. Repeat left-click and
+Stay awake menu toggles; expect one transition per action and consistent
+requests/visuals. Open and dismiss the right-click menu; expect no transition.
+Choose Exit; expect icon removal, explicit-clear output, process exit, and no
+RedEye request. Retain the labeled user observations/diagnostics.
+
+Windows 10, monitor/DPI changes, Explorer restart, lock/explicit sleep, forced
+termination, long-duration idle behavior, and release-only behavior remain
+untested. Settings, startup registration, and duplicate launch are later gates.
