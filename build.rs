@@ -1,5 +1,7 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=build.rs");
+    // The manifest version is also embedded in the executable's resources.
+    println!("cargo:rerun-if-changed=Cargo.toml");
     println!("cargo:rerun-if-changed=assets/redeye-active.ico");
     println!("cargo:rerun-if-env-changed=RC_PATH");
     println!("cargo:rerun-if-env-changed=WindowsSdkVerBinPath");
