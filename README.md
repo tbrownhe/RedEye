@@ -2,9 +2,9 @@
 
 A small Windows 10/11 utility for preventing automatic idle sleep.
 
-Development currently stops at **milestone 1: console power control**. The
-notification-area interface, preferences, and sign-in launch are later
-milestones. See [the workflow](docs/WORKFLOW.md) for status and
+Development is at **milestone 2: native tray integration**. Interactive
+toggling, preferences, and sign-in launch are later milestones. See
+[the workflow](docs/WORKFLOW.md) for status and
 [validation evidence](docs/VALIDATION.md) for checks and remaining native tests.
 
 ## Build and run
@@ -16,12 +16,13 @@ cargo build --locked
 & .\target\debug\redeye.exe
 ```
 
-RedEye starts active and allows the display to turn off. Enter `off` to allow
-automatic sleep, `on` to prevent it again, `status` to print the last
-successfully applied state, or `quit` to clear the request explicitly and exit.
-EOF also clears and exits. Use `quit` for normal shutdown; Ctrl+C or closing
-the console terminates the process and relies on Windows releasing the
-thread-owned request.
+RedEye starts active and allows the display to turn off. Its original red eye
+icon appears in the notification area, possibly in the overflow. Right-click
+it for a native menu and choose **Exit** to remove the icon, explicitly clear
+the power request, and exit. Left-click currently prints a diagnostic and
+leaves power state unchanged; toggling belongs to milestone 3. The debug build
+still has a console. Closing that console terminates the process and relies
+on Windows releasing its thread-owned request.
 
 RedEye runs without elevation. Windows may require an Administrator terminal
 for the separate `powercfg /requests` diagnostic. It does not prevent locking,
@@ -36,8 +37,11 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
 ```
 
-The application has no third-party dependencies. `power.rs` wraps one scalar
-Kernel32 call. Its owner stays on the main thread, and state changes are
-committed only after Windows accepts them. Main explicitly handles cleanup
-errors rather than hiding them in a destructor. Tests cover the flag matrix
-and failed transitions; external Windows observations are also required.
+`windows-sys` 0.61.2 supplies native tray bindings, with `windows-link` as its
+only supporting crate. `power.rs` wraps one scalar Kernel32 call. Its owner
+stays on the main thread alongside the blocking native event loop. State
+changes are committed only after Windows accepts them. Normal shutdown
+explicitly handles cleanup errors; destructors provide fallback handle
+cleanup. Tests cover the flag matrix, failed transitions, and icon bounds;
+external Windows observations are also required. Icons are embedded, with
+[reproducible drawing source](docs/ICONS.md).

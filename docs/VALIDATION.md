@@ -96,3 +96,102 @@ icons/DPI, Explorer restart, and portable release checks belong to later stages.
 
 See [the workflow](WORKFLOW.md) for gates and
 [the README](../README.md) for current console usage.
+
+## Original icon assets — 2026-11-08
+
+Independent asset review found no defects. The validator regenerated the frozen
+assets using the documented command below; every file was byte-identical before
+and after. The argument changes execution policy only for that child process.
+No application code or other generated files were modified.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/generate-icons.ps1
+```
+
+| Artifact | Bytes | SHA256 before and after regeneration |
+|---|---:|---|
+| `assets/redeye-active.ico` | 66,197 | `A0E1B234D2A6EA01B76156EA8CB371595F413F0A69374FCBE4FE3FE0F25D3077` |
+| `assets/redeye-inactive.ico` | 45,303 | `1973E8BA8FD974AECDF4CD92F744B36CA4FD8F41EAE46190379706D7501942D1` |
+| `assets/tray-preview.png` | 24,654 | `10A6231599233948AF1C1AA37E5754FE55A09BACF4398B29FEC65A3A818AF38D` |
+
+Both ICO directories contain exactly eight frames: 16, 20, 24, 32, 48, 64,
+128, and 256 pixels square. Binary checks passed for ICO header/type, one plane,
+32-bit directory entries, contiguous nonoverlapping payload bounds, and no
+trailing bytes. Every payload has the PNG signature and 8-bit RGBA color type;
+System.Drawing decoded all sixteen frames at the declared dimensions. Each
+frame's top-left corner is transparent.
+
+The 352x256 preview decoded successfully and was visually inspected at its
+original resolution. Active has a clear bright red lens/core; inactive has a
+smaller matte burgundy lens and dark core. Both remain distinguishable at the
+shown 16/20/24/32 pixel sizes on light and dark backgrounds. All local links in
+[the icon documentation](ICONS.md) exist. This validates asset files and a local
+preview, not native notification-area readability, DPI scaling, or monitor
+changes; those checks remain pending native tray integration.
+
+## Milestone 2 — 2026-11-08
+
+Status: milestone 2 complete on the tested Windows 11 environment. Independent
+integrated code review found no defects; automated checks passed. The user
+confirmed tray/menu interactions and supplied external power-request evidence.
+No second interactive process was launched by the validator while the user tested.
+
+Environment is the Windows 11 x64/Rust 1.99.1 MSVC environment identified above.
+Artifact: frozen working-tree milestone 2, `target/debug/redeye.exe`, SHA256
+`702EB2C89AC898E2EF9C5184D3097385B33B603CBE3081A7134DF9BAEE72D3B7`.
+The hash matched before and after validation. The lockfile contains `redeye`,
+`windows-sys 0.61.2`, and its sole dependency `windows-link 0.2.1`.
+
+| Check | Actual result | Status |
+|---|---|---|
+| `cargo fmt --check` | Exit 0 | Pass |
+| `cargo check --locked` | Exit 0 | Pass |
+| `cargo clippy --locked --all-targets -- -D warnings` | Exit 0, no lint findings | Pass |
+| `cargo test --locked` | Three tests passed: power flags, failed transitions, embedded-icon frames/corrupt bounds | Pass |
+| `cargo build --locked` | Exit 0; expected executable hash unchanged | Pass |
+| Existing icon artifacts | All three hashes still match the asset section; no asset changes | Pass: reused asset evidence |
+| README and local documentation links | Current usage describes native tray/Exit and diagnostic-only left click; all local links exist; `git diff --check` has no whitespace errors | Pass |
+| Native initialization/message shutdown smoke | Implementer reported an owned outside-sandbox process, hidden HWND matched to its PID, `WM_CLOSE`, exit 0, Awake and explicit-clear output, empty stderr | Pass: supplied smoke evidence only |
+| Icon/tooltip/native menu/dismiss/Exit | User confirmed the requested procedure, including extra clicks; icon/tooltip/menu and normal Exit behaved as expected | Pass: user-observed |
+| Repeated left/right event distinction | User console output alternated left/right events three times; each left/right action left awake state unchanged as expected for milestone 2 | Pass: user-observed |
+| Native requests before and after Exit | Before Exit: RedEye SYSTEM process request only; after Exit: every category `None`; console reported explicit clear | Pass: user-observed |
+
+The implementer's default-sandbox attempt could not establish an accessible
+hidden window and was not counted as a successful native test. Only its own
+verified executable child was stopped. The later outside-sandbox smoke above
+finished before the user-test handoff. It proves initialization and message
+shutdown, not mouse/menu behavior or external Windows request removal. Separate
+user evidence completes those native checks: the user confirmed the requested
+procedure while noting extra clicks. Console output showed the initial Awake
+instruction, three alternating left/right event pairs with state unchanged,
+and final `RedEye: execution-state request cleared.` Before Exit, elevated
+`powercfg /requests` listed SYSTEM:
+
+```text
+[PROCESS] \Device\HarddiskVolume3\Users\tbrow\dev\RedEye\target\debug\redeye.exe
+```
+
+DISPLAY and all other categories were `None`; after Exit, all categories were
+`None`. The same frozen executable hash was retained, so automated checks were
+not repeated after this user evidence.
+
+### Completed native procedure
+
+1. In Administrator PowerShell, capture `powercfg /requests` before launch.
+2. Launch the debug executable in a normal PowerShell. Find the original red
+   eye icon in the notification area or overflow; hover for `RedEye — Awake`.
+3. Run the diagnostic. Expect RedEye's SYSTEM request and no RedEye DISPLAY
+   request.
+4. Left-click once. Expect the console diagnostic and unchanged awake state
+   in this milestone. Right-click and dismiss the native menu without choosing
+   Exit. Expect no awake transition or extra left-click diagnostic from the
+   right-click action. Repeat the power diagnostic; expect the same request.
+5. Right-click and choose Exit. Expect icon removal, explicit-clear output,
+   and process exit. Repeat the diagnostic; expect RedEye's request absent.
+
+The user completed this procedure for the artifact above, with extra repeated
+clicks as described in the evidence. Retain these observations and labeled diagnostics.
+Actual-size icon/DPI, Explorer restart, Windows 10, forced termination, locking,
+explicit sleep, and release-only checks remain unperformed. Interactive state,
+display preference, settings, startup, and single-instance checks are later
+milestones, not milestone 2 acceptance claims.

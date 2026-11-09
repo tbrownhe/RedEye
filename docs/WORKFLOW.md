@@ -282,6 +282,10 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Defer crate/event-loop/settings-format choices until environment and current APIs are verified | The handover makes Windows click handling, thread ownership, small dependencies, and compatibility selection criteria |
 | 2026-11-08 | Milestone 1 uses a direct, scalar `extern "system"` Kernel32 import and no crates | Microsoft API documentation and local SDK 10.0.26100.0 `WinBase.h`/`WinNT.h` confirm the DWORD signature, flags, and Windows compatibility; one API does not need a binding dependency. Reevaluate bindings before tray implementation. |
 | 2026-11-08 | Main owns the power request; the wrapper is neither `Send` nor `Sync`; cleanup is explicit | Thread-affine requests must not migrate. `PhantomData<Rc<()>>` prevents safe cross-thread movement/sharing without allocation. Explicit cleanup can report failures that a destructor could not return. |
+| 2026-11-08 | For milestone 2 use `windows-sys` 0.61.2 with a native hidden window and blocking message loop | [Official manifest](https://docs.rs/crate/windows-sys/0.61.2/source/Cargo.toml.orig): MSRV 1.71, no default features, only `windows-link` underneath. Enable `Win32_Foundation`, `Win32_Graphics_Gdi`, `Win32_System_LibraryLoader`, `Win32_UI_Shell`, and `Win32_UI_WindowsAndMessaging`. [Rust target support](https://doc.rust-lang.org/rustc/platform-support.html) covers x64 MSVC Windows 10+. |
+| 2026-11-08 | Evaluate `windows` 0.62.2 and `tray-icon` 0.26.1; prefer direct native tray bindings for this Windows-only utility | [windows manifest](https://docs.rs/crate/windows/0.62.2/source/Cargo.toml.orig) requires Rust 1.82 and more support crates. [tray-icon manifest](https://github.com/tauri-apps/tray-icon/blob/tray-icon-v0.26.1/Cargo.toml) requires Rust 1.90 and adds menu/channel/error helpers while still needing an event loop. Its [Windows source](https://github.com/tauri-apps/tray-icon/blob/tray-icon-v0.26.1/src/platform_impl/windows/mod.rs) supports distinct left/right events, so it is viable; direct bindings keep error checks and owning-thread dispatch explicit. |
+| 2026-11-08 | Use a hidden top-level window and `GetMessageW`, with no app-state pointer in the window procedure | [GetMessageW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew) blocks without polling and has distinct error/quit/message results. Dispatch must avoid mutable aliasing during reentrant native callbacks. [Shell_NotifyIconW](https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyiconw) supports native icon/menu events on Windows 10/11. |
+| 2026-11-08 | Original geometric eye icons use PNG-compressed ICO frames at 16/20/24/32/48/64/128/256 pixels | `ux_designer` inspected the reference and produced deterministic drawing source and actual-size previews. Active/inactive differ in brightness and lens shape as well as color. See [icon notes](ICONS.md); native tray/DPI verification is still required. |
 
 Add a short row for a material decision, including source links when verifying
 external APIs. Revisit a choice when evidence changes; avoid speculative design.
@@ -333,3 +337,25 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   nonfunctional exception; application code, tests, manifest, lockfile, and
   ignore configuration followed delegated implementation, separate review,
   and specialist validation.
+
+## Milestone 2 checkpoint — 2026-11-08
+
+- Native tray integration, original embedded active icon, version-4 shell
+  callbacks, native menu, and Exit are implemented. The hidden top-level
+  window and blocking message loop share the main thread with power ownership.
+  Callback actions are queued without borrowing application state; queue
+  borrows end before potentially reentrant native calls.
+- Independent review found no correctness defects. Specialist validation
+  passed formatting, locked check/build, Clippy, and all three tests. Original
+  icon generation is reproducible; frame decoding and bounds checks passed.
+- User confirmed the tooltip, native menu, dismissal, and Exit, and supplied
+  console output showing three alternating left/right interactions without
+  changing power state. Elevated diagnostics showed only RedEye's SYSTEM
+  request while active and no requests after Exit, which reported explicit
+  clear. **Milestone 2 is complete on Windows 11.** See
+  [validation evidence](VALIDATION.md) for the exact artifact and limitations.
+- Milestone 3 now adds interactive awake/display state. Main will receive
+  commands from a blocking tray event method, apply power changes first, and
+  render only the successfully applied state. No new dependencies are needed.
+  Preferences, startup registration, and single-instance handling remain
+  milestone 4 work; distribution remains milestone 5.
