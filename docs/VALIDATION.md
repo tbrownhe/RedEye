@@ -2,9 +2,10 @@
 
 ## Milestone 1 — 2026-11-08
 
-Status: implementation and independent code review complete; automated checks
-passed. External Windows request appearance/removal remains pending. Later
-milestones have not been validated.
+Status: milestone 1 complete on the tested Windows 11 environment. Independent
+code review and automated checks passed. The user externally observed baseline,
+active/off/on transitions, a maintained request, and removal after normal exit.
+Later milestones have not been validated.
 
 Environment: Windows 11 Home 10.0.26300, build 26300, x64 (lead's native CIM
 query); Rust 1.99.1 (`58cf8f9c3`), Cargo 1.99.1, native
@@ -28,7 +29,9 @@ lockfile contains only `redeye 0.1.0`; there are no third-party dependencies.
 | Wait with stdin open | Owned child stayed alive; 0 ms CPU increase across a 3-second sample after a 1-second settling period; working set 4,005,888 bytes | Pass: short idle observation only |
 | README usage and local links; `git diff --check` | Usage agrees with console; linked local files exist; no whitespace errors | Pass |
 | Elevated `powercfg /requests` baseline | User reported all categories `None` before launch | Pass: user-observed baseline |
-| Active, cleared, reactivated, maintained, and exited requests | Awaiting user diagnostic output; agent diagnostic requires administrator privileges | Not yet verified |
+| Elevated active/off/on request transitions | User supplied three outputs in requested order: active and on show RedEye SYSTEM request; off shows no requests; DISPLAY remains `None` | Pass: user-observed transitions |
+| Request maintained after 30 seconds | User's next requested diagnostic shows the same RedEye SYSTEM request; DISPLAY and other categories `None` | Pass: user-observed |
+| Request removed after `quit` | User's final requested diagnostic has every category `None` | Pass: user-observed |
 
 Rustup emitted its existing home-path canonicalization warning; all listed
 commands succeeded. Console smoke tests ran a standard-user executable with
@@ -42,7 +45,22 @@ zero returns; it does not induce a real Windows API failure. Independent review
 found no correctness defects in thread ownership, flags, commit-after-success,
 FFI, or explicit cleanup paths.
 
-## Remaining native milestone 1 check
+The user supplied elevated `powercfg /requests` outputs for active, off, and on,
+in that requested order. Active and on each list this SYSTEM request:
+
+```text
+[PROCESS] \Device\HarddiskVolume3\Users\tbrow\dev\RedEye\target\debug\redeye.exe
+```
+
+DISPLAY, AWAYMODE, EXECUTION, PERFBOOST, and ACTIVELOCKSCREEN are `None` in
+those active/on outputs. The off output has every category `None`. The user
+then supplied the requested 30-second maintained and post-quit outputs in that
+order: the first retains the same SYSTEM process request with DISPLAY and other
+categories `None`; the second has every category `None`. These external
+observations establish the milestone 1 native gate on Windows 11. The executable
+was unchanged, so the passing checks and recorded hash were reused.
+
+## Native milestone 1 procedure
 
 Keep RedEye in a normal PowerShell; use a separate **Administrator PowerShell**
 for the diagnostic. Elevation applies to the diagnostic, not the application.
@@ -66,6 +84,10 @@ for the diagnostic. Elevation applies to the diagnostic, not the application.
    the diagnostic. Expect RedEye's request absent.
 7. Retain labeled outputs and the executable hash with the result. Distinguish
    unrelated applications' requests from RedEye's contribution.
+
+This procedure is complete through user-observed diagnostics for the artifact
+identified above. The agent's own diagnostic could not run without administrator
+privileges; user evidence is distinguished from agent-run checks in the table.
 
 Ctrl+C, console closure, forced termination, locking, explicit sleep, Windows
 10 coverage, and long-duration idle behavior were not tested. Tray interactions,

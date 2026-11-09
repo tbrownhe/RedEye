@@ -322,11 +322,13 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   prove successful API returns, not external Windows request observation.
 - Independent `correctness_reviewer` review found no correctness defects.
   `release_validator` repeated the Rust checks and console smoke tests on the
-  unchanged executable; all passed. The user supplied an elevated diagnostic
-  baseline with every category `None`; active/off/on/exit outputs are pending.
-  Milestone 1 remains implemented but not fully validated. See
+  unchanged executable; all passed. The user supplied elevated diagnostics
+  showing an empty baseline, RedEye's SYSTEM request on launch, no request
+  after `off`, its return after `on`, persistence after 30 seconds, and removal
+  after `quit`; DISPLAY stayed clear. **Milestone 1 is complete on Windows 11.** See
   [validation evidence](VALIDATION.md) for the artifact hash, checks, limits,
-  and exact remaining steps. Milestones 2–5 have not started.
+  and remaining platform limits. Milestone 2 is now in implementation;
+  milestones 3–5 have not started.
 - The lead directly maintained prose documentation under the documented
   nonfunctional exception; application code, tests, manifest, lockfile, and
   ignore configuration followed delegated implementation, separate review,
