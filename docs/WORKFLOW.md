@@ -181,6 +181,61 @@ Use a short verification section in the task/PR; retain release evidence under
 - Stage 0: workflow complete; build environment and API verification pending.
   Stages 1–5: not started. No build or Windows behavior tests have run.
 
+## Toolchain verification — 2026-11-08
+
+This supersedes the initial checkpoint's pending build-environment status.
+
+| Component | Verified installation |
+|---|---|
+| Rust / Cargo | `rustc 1.99.1`, `cargo 1.99.1`; default `stable-x86_64-pc-windows-msvc` |
+| Rust checks | Clippy `0.1.99` and rustfmt `1.10.0-stable` installed and exercised |
+| C++ build tools | Visual Studio Community 2026, MSVC toolset `14.51.36231`, x64 compiler/linker |
+| Windows SDK | `10.0.26100.0`; x64 system/UCRT libraries and Windows headers present |
+
+Created a disposable Cargo project outside this repository with no external
+dependencies. A direct `kernel32!GetCurrentProcessId` import matched Rust's
+process ID in both its test and release executable. The following passed:
+
+```powershell
+cargo generate-lockfile --offline
+cargo fmt --check
+cargo check --locked --offline
+cargo clippy --locked --offline --all-targets -- -D warnings
+cargo test --locked --offline
+cargo build --release --locked --offline
+```
+
+The one native API test passed, and the release executable ran successfully.
+Rust discovered MSVC and linked successfully from ordinary PowerShell without
+loading a Visual Studio developer environment.
+
+Also compiled and ran a C++ program including `windows.h` and calling
+`GetCurrentProcessId`, using `cl.exe /nologo /W4 /WX /EHsc` after loading the
+installed Visual Studio DevShell module and entering its x64 environment.
+The `Launch-VsDevShell.ps1` helper was blocked by this shell's script execution
+policy; importing the installed binary module worked without changing policy.
+
+Before restarting VS Code, the agent's inherited PATH lacked Cargo and the
+probe commands needed this process-local adjustment:
+
+```powershell
+$env:PATH = (Join-Path $env:USERPROFILE '.cargo\bin') + ';' + $env:PATH
+```
+
+After the user restarted VS Code, the agent resolved `rustup`, `rustc`, and
+`cargo` from `C:\Users\tbrow\.cargo\bin` without any PATH adjustment.
+`rustc --version --verbose`, `cargo --version`, `rustup show active-toolchain`,
+`cargo clippy --version`, and `cargo fmt --version` all succeeded. The user
+also confirmed Rust version commands work in the integrated terminal.
+
+No permanent PATH or execution-policy changes were made by the agent.
+Rustup emitted a home-path canonicalization warning in the agent environment;
+it did not prevent any build, lint, test, or executable from succeeding.
+
+Build environment: verified for native x64 Windows development. Stage 0 still
+needs library/API selection verification before application implementation.
+Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behavior.
+
 ## Decision record
 
 | Date | Decision | Reason / evidence |

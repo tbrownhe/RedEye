@@ -86,6 +86,11 @@ learning Rust. Simplicity and correctness take priority over feature count.
 
 ## Code and validation
 
+The native Windows MSVC toolchain was verified on 2026-11-08; see the workflow
+for versions and evidence. If an agent shell cannot resolve Cargo, prepend
+`%USERPROFILE%\.cargo\bin` to that command process's PATH. Do not interpret a
+stale inherited PATH as a missing installation or change permanent settings.
+
 Start with the handover's suggested `main.rs`, `power.rs`, `tray.rs`, and
 `settings.rs` boundaries as each becomes necessary. Avoid empty scaffolding,
 generic frameworks, extra crates, and abstractions with no current consumer.
