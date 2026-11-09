@@ -53,17 +53,16 @@ jobs:
       - name: Build portable executable
         run: cargo build --release --locked
 
-      - name: Write executable checksum
-        run: |
-          $hash = (Get-FileHash -LiteralPath 'target/release/redeye.exe' -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  redeye.exe" | Set-Content -LiteralPath 'target/release/SHA256SUMS.txt' -Encoding ascii
+      - name: Package release candidate
+        run: ./tools/package-release.ps1
 
-      - name: Upload executable and checksum
+      - name: Upload executable, ZIP, and checksums
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: RedEye-windows-x64
           path: |
-            target/release/redeye.exe
-            target/release/SHA256SUMS.txt
+            dist/release-assets/RedEye.exe
+            dist/release-assets/RedEye-windows-x64.zip
+            dist/release-assets/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 7
