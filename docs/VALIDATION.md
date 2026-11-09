@@ -931,3 +931,16 @@ The lead downloaded the metadata, logs, and assets; the validator used local
 evidence and the bounded native duplicate test, without credentials or remote
 mutations. This documentation-only follow-up leaves the tagged source and
 uploaded files intact and must pass protected PR CI. Publication stays manual.
+
+### v0.1.0 publication checkpoint — 2026-11-09
+
+After the draft checks and evidence merge, the lead's release API readback
+observed release `439362565` published at `2026-11-09T16:24:30Z`, with
+`draft=false`, `prerelease=false`, and public page
+[RedEye v0.1.0](https://github.com/tbrownhe/RedEye/releases/tag/v0.1.0).
+The lead did not invoke publication. Tag/target remain
+`d943ea528c5aff043e4f32175d884f0bd2f6ea9c`; all three asset IDs and SHA256
+digests are unchanged from the independently validated draft above. Prior
+draft observations describe their historical checkpoint. Publication adds no
+fresh GUI/power or broader native-test evidence; the listed manual checks
+remain unperformed.

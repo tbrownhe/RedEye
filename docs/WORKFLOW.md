@@ -718,3 +718,10 @@ Publication remains manual after inspecting the draft and the remaining
 Selecting a non-prerelease version does not establish new native coverage.
 The original RC remains published with unchanged assets. This evidence-only
 follow-up does not move either tag or rebuild the draft's files.
+
+The release was subsequently observed published at `2026-11-09T16:24:30Z`:
+`draft=false`, `prerelease=false`, same tag/source and verified asset digests.
+Publication was not invoked by the lead. The public
+[v0.1.0 release](https://github.com/tbrownhe/RedEye/releases/tag/v0.1.0) is now
+available; this publication checkpoint does not change the remaining native
+test limitations.
