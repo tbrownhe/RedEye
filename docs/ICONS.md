@@ -21,6 +21,13 @@ Optional documentation tagline: *I'm afraid I can't go to sleep, Dave.*
 
 ![Tray icons at actual pixel sizes](../assets/tray-preview.png)
 
+The README uses [awake](images/redeye-active.png) and
+[sleep allowed](images/redeye-inactive.png) artwork extracted unchanged from
+the 256-pixel PNG frames in these original ICO files. These PNG copies are for
+documentation display; the application continues to embed the ICO assets.
+The [tray-menu screenshot](images/tray-menu.png) is the user's supplied Windows
+capture. It shows all three options enabled, rather than default settings.
+
 Both ICO files contain eight 32-bit RGBA PNG frames: 16, 20, 24, 32, 48,
 64, 128, and 256 pixels square. Transparent corners preserve the circular
 silhouette. Each size is drawn separately with 4x supersampling, rather than
