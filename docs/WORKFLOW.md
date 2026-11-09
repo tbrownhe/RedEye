@@ -287,6 +287,11 @@ Stages 1–5 remain unstarted; these probes did not test RedEye power/tray behav
 | 2026-11-08 | Use a hidden top-level window and `GetMessageW`, with no app-state pointer in the window procedure | [GetMessageW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew) blocks without polling and has distinct error/quit/message results. Dispatch must avoid mutable aliasing during reentrant native callbacks. [Shell_NotifyIconW](https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyiconw) supports native icon/menu events on Windows 10/11. |
 | 2026-11-08 | Original geometric eye icons use PNG-compressed ICO frames at 16/20/24/32/48/64/128/256 pixels | `ux_designer` inspected the reference and produced deterministic drawing source and actual-size previews. Active/inactive differ in brightness and lens shape as well as color. See [icon notes](ICONS.md); native tray/DPI verification is still required. |
 | 2026-11-08 | Main coordinates typed tray events, effective power state, and display preference in milestone 3 | A blocking `next_event` ends the tray borrow before the OS transition. Failed power calls preserve state/visuals and report a recoverable native error. Partial visual update failures exit through explicit cleanup to avoid leaving misleading UI. Checkmarks use checked [SetMenuItemInfoW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setmenuiteminfow) calls. |
+| 2026-11-08 | Milestone 4 uses native HKCU registry storage, without another crate | `Software\RedEye\KeepDisplayOn` is a strict DWORD preference. Startup uses only the named `RedEye` value under the per-user Run key. [Registry reads](https://learn.microsoft.com/en-us/windows/win32/api/winreg/nf-winreg-reggetvaluew) return status codes directly. Missing data defaults off; malformed data or read/write failure must be reported accurately. Add only Registry, Threading, and Security/Authorization features to the existing bindings. |
+| 2026-11-08 | Startup points to an explicitly quoted stable executable; known Cargo/temp paths are refused | [Run-key documentation](https://learn.microsoft.com/en-us/windows/win32/setupapi/run-and-runonce-registry-keys) limits the command to 260 characters. Preserve Windows Unicode paths. Installation remains a manual portable copy, with startup disabled by default. Existing actual registration is read afresh when opening the menu, including registrations to another copy. |
+| 2026-11-08 | Single-instance guard is a session-local mutex named with the current user SID | [CreateMutexW](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createmutexw) with no initial ownership and immediate `ERROR_ALREADY_EXISTS` handling needs no waits or IPC. [Local namespaces](https://learn.microsoft.com/en-us/windows/win32/termserv/kernel-object-namespaces) separate sessions; the SID also separates users. Owned token/mutex handles stay alive for the required scope. |
+| 2026-11-08 | Restore the current tray icon after Explorer's `TaskbarCreated` broadcast | The hidden top-level window receives the [documented notification](https://learn.microsoft.com/en-us/windows/win32/shell/taskbar#taskbar-creation-notification). Re-add the current icon and callback version on the owning thread; do not refresh power requests. A failed restore must report and cleanly exit. |
+| 2026-11-08 | Plan static CRT linkage and the GUI subsystem for the portable release | Read-only `dumpbin` inspection found `VCRUNTIME140.dll` in the debug imports. Rust supports [static CRT linkage](https://doc.rust-lang.org/reference/linkage.html#static-and-dynamic-c-runtimes) on x64 MSVC, configured through [target rustflags](https://doc.rust-lang.org/cargo/reference/config.html#targettriplerustflags). The [windows_subsystem attribute](https://doc.rust-lang.org/reference/runtime.html#the-windows_subsystem-attribute) removes the release console. Final imports/subsystem and standalone behavior must be verified after milestone 4 completes. |
 
 Add a short row for a material decision, including source links when verifying
 external APIs. Revisit a choice when evidence changes; avoid speculative design.
@@ -379,3 +384,25 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
 - Milestone 4 now adds per-user preference persistence, opt-in startup,
   session/user single-instance protection, and Explorer icon recovery. The
   final two stages remain unverified until their own checks are recorded.
+
+## Milestone 4 checkpoint — 2026-11-08
+
+- Added `settings.rs` for HKCU preferences/startup and `instance.rs` for the
+  SID-qualified local mutex. Only binding features changed; crate versions and
+  the lockfile package graph are unchanged. Explorer recovery re-adds the
+  current icon/version on the main thread without another power call.
+- Independent review found no defects. Specialist validation passed all Rust
+  checks, seven tests, the debug build, and an identical copied test executable
+  with a space in its path. User confirmed all six native procedure items:
+  duplicate launch, Cargo startup refusal, preference restart with external
+  SYSTEM + DISPLAY requests, malformed setting warning/fallback and repair,
+  quoted stable-path startup enable/readback/disable, and cleanup after Exit.
+- Duplicate behavior is intentional: the newly launched process exits; the
+  existing instance continues holding its selected request. A duplicate is
+  not an Exit command. **Milestone 4's core exit gate is complete on Windows 11.**
+- Real sign-in, actual Explorer restart, cross-session isolation, high-DPI
+  changes, Windows 10, and lock/explicit-sleep behavior remain unperformed
+  release-readiness checks. Their exact manual steps remain in
+  [validation evidence](VALIDATION.md); no automated result substitutes for
+  them. Milestone 5 now prepares a portable release candidate with these
+  limitations clearly retained.

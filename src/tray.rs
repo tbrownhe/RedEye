@@ -1,6 +1,12 @@
 //! Native notification-area UI. No window procedure borrows application state.
 
-use std::{cell::RefCell, collections::VecDeque, io::Write, mem::size_of, ptr};
+use std::{
+    cell::{Cell, RefCell},
+    collections::VecDeque,
+    io::Write,
+    mem::size_of,
+    ptr,
+};
 
 use windows_sys::{
     Win32::{
@@ -23,6 +29,7 @@ const ICON_ID: u32 = 1;
 const EXIT_ID: usize = 1;
 const AWAKE_ID: usize = 2;
 const DISPLAY_ID: usize = 3;
+const STARTUP_ID: usize = 4;
 const TRAY_MESSAGE: u32 = WM_APP + 1;
 const WAKE_MESSAGE: u32 = WM_APP + 2;
 const KEY_SELECT: u32 = NIN_SELECT + 1;
@@ -31,11 +38,15 @@ const KEY_SELECT: u32 = NIN_SELECT + 1;
 enum Action {
     LeftClick,
     ContextMenu,
+    TaskbarCreated,
 }
 
 pub enum Event {
     ToggleAwake,
     ToggleDisplay,
+    ToggleStartup,
+    OpenMenu,
+    TaskbarCreated,
     Exit,
 }
 
@@ -44,6 +55,7 @@ thread_local! {
     // actions here, never references to Tray or PowerRequest. No queue borrow
     // is held across a Win32 call that could reenter the window procedure.
     static ACTIONS: RefCell<VecDeque<Action>> = const { RefCell::new(VecDeque::new()) };
+    static TASKBAR_CREATED: Cell<u32> = const { Cell::new(0) };
 }
 
 pub struct Tray {
@@ -54,6 +66,7 @@ pub struct Tray {
     active_icon: HICON,
     inactive_icon: HICON,
     icon_registered: bool,
+    startup_checked: bool,
 }
 
 impl Tray {
@@ -66,6 +79,7 @@ impl Tray {
             active_icon: ptr::null_mut(),
             inactive_icon: ptr::null_mut(),
             icon_registered: false,
+            startup_checked: false,
         };
         if let Err(error) = tray.initialize(active, keep_display_on) {
             return match tray.close() {
@@ -81,6 +95,11 @@ impl Tray {
         // NUL-terminated strings. Each owned handle is saved immediately for
         // cleanup on this thread. Win32 copies the registration strings.
         unsafe {
+            let taskbar_created = RegisterWindowMessageW(w!("TaskbarCreated"));
+            if taskbar_created == 0 {
+                return Err(os_error("RegisterWindowMessageW"));
+            }
+            TASKBAR_CREATED.with(|message| message.set(taskbar_created));
             self.instance = GetModuleHandleW(ptr::null());
             if self.instance.is_null() {
                 return Err(os_error("GetModuleHandleW"));
@@ -95,8 +114,8 @@ impl Tray {
                 return Err(os_error("RegisterClassW"));
             }
             self.class_registered = true;
-            // A hidden top-level tool window can also receive TaskbarCreated
-            // broadcasts in a later milestone. Never call ShowWindow.
+            // A hidden top-level tool window receives TaskbarCreated broadcasts.
+            // Never call ShowWindow.
             self.window = CreateWindowExW(
                 WS_EX_TOOLWINDOW,
                 CLASS_NAME,
@@ -124,6 +143,8 @@ impl Tray {
                 (MF_STRING, AWAKE_ID, w!("Stay awake")),
                 (MF_STRING, DISPLAY_ID, w!("Keep display on")),
                 (MF_SEPARATOR, 0, ptr::null()),
+                (MF_STRING | MF_GRAYED, STARTUP_ID, w!("Launch at sign-in")),
+                (MF_SEPARATOR, 0, ptr::null()),
                 (MF_STRING, EXIT_ID, w!("Exit")),
             ] {
                 if AppendMenuW(self.menu, flags, id, label) == 0 {
@@ -134,6 +155,10 @@ impl Tray {
         self.active_icon = load_icon(include_bytes!("../assets/redeye-active.ico"))?;
         self.inactive_icon = load_icon(include_bytes!("../assets/redeye-inactive.ico"))?;
         self.update_checks(active, keep_display_on)?;
+        self.add_icon(active)
+    }
+
+    fn add_icon(&mut self, active: bool) -> Result<(), String> {
         let mut data = self.visual_data(active);
         data.uFlags |= NIF_MESSAGE;
         data.uCallbackMessage = TRAY_MESSAGE;
@@ -160,12 +185,8 @@ impl Tray {
             let action = ACTIONS.with(|actions| actions.borrow_mut().pop_front());
             match action {
                 Some(Action::LeftClick) => return Ok(Event::ToggleAwake),
-                Some(Action::ContextMenu) => {
-                    if let Some(event) = self.show_menu()? {
-                        return Ok(event);
-                    }
-                    continue;
-                }
+                Some(Action::ContextMenu) => return Ok(Event::OpenMenu),
+                Some(Action::TaskbarCreated) => return Ok(Event::TaskbarCreated),
                 None => {}
             }
             let mut message = MSG::default();
@@ -190,7 +211,7 @@ impl Tray {
         }
     }
 
-    fn show_menu(&self) -> Result<Option<Event>, String> {
+    pub fn show_menu(&self) -> Result<Option<Event>, String> {
         let mut point = POINT::default();
         // SAFETY: handles are live and point is writable. The modal menu may
         // reenter window_proc, which queues actions and never borrows self.
@@ -224,10 +245,41 @@ impl Tray {
             Ok(match selected as usize {
                 AWAKE_ID => Some(Event::ToggleAwake),
                 DISPLAY_ID => Some(Event::ToggleDisplay),
+                STARTUP_ID => Some(Event::ToggleStartup),
                 EXIT_ID => Some(Event::Exit),
                 _ => None,
             })
         }
+    }
+
+    pub fn refresh_startup(&mut self, registered: Option<bool>) -> Result<(), String> {
+        let checked = registered.unwrap_or(self.startup_checked);
+        let info = MENUITEMINFOW {
+            cbSize: size_of::<MENUITEMINFOW>() as u32,
+            fMask: MIIM_STATE,
+            fState: (if checked { MFS_CHECKED } else { MFS_UNCHECKED })
+                | if registered.is_some() {
+                    MFS_ENABLED
+                } else {
+                    MFS_DISABLED
+                },
+            ..Default::default()
+        };
+        // SAFETY: Live menu and existing command ID, initialized state-only
+        // structure. Unknown registry state disables the item, preserving its
+        // previous checkmark rather than claiming a successful fresh read.
+        if unsafe { SetMenuItemInfoW(self.menu, STARTUP_ID as u32, 0, &info) } == 0 {
+            return Err(os_error("SetMenuItemInfoW startup state"));
+        }
+        self.startup_checked = checked;
+        Ok(())
+    }
+
+    pub fn restore(&mut self, active: bool) -> Result<(), String> {
+        // Explorer discarded the old icon; retain current effective power
+        // state, tooltip, and both menu preferences without another power call.
+        self.icon_registered = false;
+        self.add_icon(active)
     }
 
     pub fn update(&mut self, active: bool, keep_display_on: bool) -> Result<(), String> {
@@ -350,12 +402,17 @@ unsafe extern "system" fn window_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    if message == TRAY_MESSAGE {
+    let taskbar_created = TASKBAR_CREATED.with(|registered| registered.get());
+    if message == TRAY_MESSAGE || (taskbar_created != 0 && message == taskbar_created) {
         let event = lparam as u32 & 0xffff;
-        let action = match event {
-            NIN_SELECT | KEY_SELECT => Some(Action::LeftClick),
-            WM_CONTEXTMENU => Some(Action::ContextMenu),
-            _ => None,
+        let action = if message == taskbar_created {
+            Some(Action::TaskbarCreated)
+        } else {
+            match event {
+                NIN_SELECT | KEY_SELECT => Some(Action::LeftClick),
+                WM_CONTEXTMENU => Some(Action::ContextMenu),
+                _ => None,
+            }
         };
         if let Some(action) = action {
             let queued = ACTIONS.with(|actions| {
@@ -397,6 +454,10 @@ pub fn report_transition_error(message: &str) {
     show_error(&format!(
         "{message}\n\nThe previous awake state and display preference are unchanged. Retry the action, or use Exit to close RedEye."
     ));
+}
+
+pub fn report_notice(message: &str) {
+    show_error(message);
 }
 
 fn show_error(message: &str) {

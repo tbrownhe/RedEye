@@ -275,3 +275,84 @@ RedEye request. Retain the labeled user observations/diagnostics.
 Windows 10, monitor/DPI changes, Explorer restart, lock/explicit sleep, forced
 termination, long-duration idle behavior, and release-only behavior remain
 untested. Settings, startup registration, and duplicate launch are later gates.
+
+## Milestone 4 — 2026-11-08
+
+Status: milestone 4 core acceptance complete on the tested Windows 11
+environment. Independent final review found no defects; automated checks
+passed. The user confirmed all six requested native procedure steps. The
+validator did not write settings/startup registration, launch processes, or
+send UI input while the user tested.
+
+Environment: Windows 11 Home build 26300 x64 / Rust 1.99.1 MSVC, as above.
+Artifact: frozen working-tree milestone 4, `target/debug/redeye.exe`, SHA256
+`A3B85D1C2514B098C45A36B5A131D1EA63FC0CB979FFAD2223AF8B6091188909`.
+The hash matched before/after checks. `portable-test/RedEye test.exe` is a
+byte-identical standalone debug copy outside Cargo output, with a space in its
+filename for the startup-quoting test; it has not been launched by the validator.
+This test copy is not a release artifact. Existing icon evidence and unchanged
+crate versions/lockfile (`windows-sys 0.61.2`, `windows-link 0.2.1`) are reused.
+
+| Check | Actual result | Status |
+|---|---|---|
+| `cargo fmt --check` | Exit 0 | Pass |
+| `cargo check --locked` | Exit 0 | Pass |
+| `cargo clippy --locked --all-targets -- -D warnings` | Exit 0, no lint findings | Pass |
+| `cargo test --locked` | Seven tests passed, including display/startup parsing and quoted stable/disposable-path rules | Pass |
+| `cargo build --locked` | Exit 0; expected artifact hash unchanged | Pass |
+| Copied executable with space in filename | Copy hash equals the debug artifact hash above | Pass: preparation only |
+| README usage/settings/startup/removal and local links | Matches saved display preference, active restart, actual HKCU registration, stable-path refusal, session instance behavior; all local links exist; `git diff --check` clean | Pass |
+| Duplicate launch | User confirmed one existing icon/instance remains unaffected and the new launch exits without another icon | Pass: user confirmation |
+| Preference/restart | User confirmed display-on preference saved; exiting while inactive then restarting starts active with SYSTEM and DISPLAY | Pass: user confirmation |
+| Malformed setting | User confirmed DWORD 2 produces a warning and display-off default; changing the option saves valid data | Pass: user confirmation |
+| Cargo-output startup refusal | User confirmed notice and unchecked/absent registration | Pass: user confirmation |
+| Stable copied startup registration | User confirmed quoted copied path with space, enable/readback/menu agreement, then disable/removal | Pass: user confirmation |
+| Normal Exit | User confirmed no RedEye requests after Exit | Pass: user confirmation |
+
+The native results above come from the user's summary confirmation, not full
+diagnostic transcripts. The user noted that launching `& $exe` while RedEye was
+already running neither exits the existing instance nor creates another; this
+is the intended duplicate behavior. The existing owner remains, and the newly
+launched duplicate exits. The unchanged artifact hash allowed reuse of the
+automated checks without rebuilding or repeating tests.
+
+The lead's pre-implementation external HKCU baseline found no RedEye Run value.
+Real sign-in launch, Explorer restart recovery, cross-session isolation, and
+Windows 10 coverage are **not run**. Focused settings tests exercise parsing and
+command construction without writing the user's registry. They do not prove
+actual sign-in execution or Explorer recovery.
+
+### Native procedure and remaining release checks
+
+User-operated milestone 4 checks: launch normally and launch a second copy;
+expect one process/icon and a clean duplicate exit. Change Keep display on,
+exit, and restart; expect restored display preference and active state on each
+launch, regardless of prior awake state. With the application closed, retain
+the original RedEye display value before testing malformed data; expect a
+clear notice and safe display-off default, then restore/save valid data.
+
+From Cargo output, enabling Launch at sign-in must show the stable-location
+notice and leave registration absent. From
+`C:\Users\tbrow\dev\RedEye\portable-test\RedEye test.exe`, enable the option;
+inspect `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` value `RedEye`
+and expect the fully quoted path, with the menu checked on reopening. Disable
+and expect the value absent and menu unchecked. Do not change unrelated values.
+Capture `powercfg /requests` for saved display-on restart and after normal Exit.
+
+Release-readiness checks still requiring deliberate user action:
+
+- **Real sign-in (not run):** from a stable final executable enable Launch at
+  sign-in, confirm the quoted HKCU value, save work, sign out/in, and verify one
+  active icon plus expected SYSTEM/DISPLAY requests and restored preference.
+  Disable startup afterward if desired. Startup Apps policy may also affect
+  execution; record the actual result, not only the Run value.
+- **Explorer restart (not run):** with RedEye active, use Task Manager to
+  restart Windows Explorer when safe; verify icon returns, menu/toggle works,
+  and power requests agree with effective state before/after. Do not count
+  compilation of the TaskbarCreated handler as evidence.
+- **Cross-session isolation (not run):** in another interactive user/session,
+  launch RedEye independently; verify its icon/request is usable and that a
+  duplicate within each session exits. Exit both copies afterward. No session
+  change was performed by the validator.
+- **Windows 10 (not run):** repeat the native lifecycle/state/startup matrix on
+  an identified Windows 10 build and record the OS/artifact and outcomes.
