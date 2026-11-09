@@ -488,13 +488,15 @@ Confirm the original active eye appears. The read-only native extraction and
 exact frame comparison establish that Windows can obtain the intended icon;
 no additional user runtime claim is inferred for this last resource-only build.
 
-## CI and main-branch rules — 2026-11-08 local checkpoint
+## CI and main-branch rules — 2026-11-08
 
-Status: independent review found no defects in the final CI/ruleset change on
+Local checkpoint before the first hosted run: independent review found no
+defects in the final CI/ruleset change on
 `ci/protect-main`. Local policy, checksum-script, and documentation checks passed.
 The lead applied the reviewed rules and supplied server readback below. The
 feature branch/PR and actual hosted Windows workflow have not yet been validated
-at this checkpoint. Local file checks do not establish a successful hosted run.
+at that checkpoint. The hosted results below supersede that initial execution
+status; local file checks alone do not establish a successful hosted run.
 
 The validator changed only this evidence document and temporary validation
 files under `portable-test/ci-validation-tools`. No workflow, rule JSON,
@@ -513,7 +515,7 @@ No GUI or native power tests were repeated for CI configuration.
 | PowerShell checksum script | Parsed without AST errors; executed against a temporary copied release fixture; lowercase SHA256 plus `redeye.exe` output matches; both artifact paths exist | Pass |
 | Local source Markdown links and whitespace | All 35 local links resolve; `git diff --check` clean | Pass |
 | Local workflow YAML/schema/expression lint | Official actionlint 1.7.12 Windows/amd64, checksum verified before execution; `actionlint .github/workflows/ci.yml` exit 0 with no findings | Pass |
-| Actual GitHub parser, Windows CI job, artifact, and PR merge | Awaiting hosted run/remote evidence | Pending |
+| Actual GitHub parser, Windows CI job, and artifact | Successful hosted execution and independent artifact verification recorded below | Pass: hosted evidence |
 
 Workflow inspected: runner `windows-2025-vs2026`, job/check `Windows CI`,
 20-minute timeout, `RUSTUP_TOOLCHAIN=1.99.1-x86_64-pc-windows-msvc`, required
@@ -549,10 +551,67 @@ JSON through API version `2026-03-10`:
   and owner-review PR requirements. No weakening or temporary exception was
   reported. This is lead-supplied server readback, not a validator remote write.
 
-Next remote checks: open the reviewed feature branch as a PR; observe the
-actual hosted `Windows CI` run, all commands and uploaded artifact; verify the
-check's GitHub Actions identity and effective rules; merge only after success
+The bootstrap PR must merge only after a successful check on its final head,
 using the explicitly authorized owner review exception through the PR. A docs
-evidence update must receive its own final successful CI run before merge.
+evidence update receives its own required CI run before merge. The bootstrap
+PR installs CODEOWNERS on the base branch for future contribution reviews.
 Existing unperformed native release checks remain unperformed; CI does not
 prove tray behavior, power requests, sign-in, or Windows 10 coverage.
+
+### First hosted PR run and artifact
+
+The lead supplied completed GitHub API evidence for
+[PR #1](https://github.com/tbrownhe/RedEye/pull/1), authored by `@tbrownhe`, head
+`73c2cc33188c003064371dfc42efd8af4e02fc7d`:
+[run 42572845456](https://github.com/tbrownhe/RedEye/actions/runs/42572845456)
+was triggered by `pull_request` and succeeded. All 13 recorded steps succeeded,
+including formatting, check, Clippy, tests, release build, checksum, and upload.
+Check run `129013923445` is named `Windows CI`, belongs to GitHub Actions app
+`15368`, concluded success, and matches that head. Thus actual GitHub workflow
+parsing, runner selection, and the required check identity are verified, not
+only local YAML lint.
+
+The validator independently inspected bounded entries from the downloaded job
+logs. They identify Windows Server 2025 Datacenter `10.0.26100`, hosted image
+`windows-2025-vs2026` version `20261103.298.1`, runner `2.338.2`, pinned
+`1.99.1-x86_64-pc-windows-msvc`, and rustc `1.99.1 (58cf8f9c3)`. Seven tests
+passed and the optimized build completed. The successful resource build and
+embedded frames establish SDK/resource-compiler availability; these normal
+logs do not report its exact SDK version, so none is claimed for this runner.
+The setup log confirms Contents/Metadata read-only token permissions and the
+two expected pinned action SHAs.
+
+The lead downloaded
+[artifact 13653687586](https://github.com/tbrownhe/RedEye/actions/runs/42572845456/artifacts/13653687586)
+(`RedEye-windows-x64`, seven-day retention, not expired) and logs without
+forwarding credentials to the download redirect. The validator read these
+local archives without reading credentials or making remote writes:
+
+| Artifact check | Result |
+|---|---|
+| Downloaded ZIP | 323,892 bytes; SHA256 `A843B425CE003F11F5278C705EE33E690D76A316401B30C0E51E41BE4AC04990`, matching upload log and supplied GitHub digest |
+| Contents/bounds | Exactly `redeye.exe` and `SHA256SUMS.txt`; bounded sizes, CRC reads passed; extraction writes only fixed filenames under the validation scratch directory |
+| Executable checksum | 474,624 bytes; SHA256 `F7B6E6FB2E4E7525264A42A6076C12C8352D0EBE7A8B18C70D506B16220DD929`, matching the artifact checksum file |
+| PE architecture/subsystem | x64 PE32+, Windows GUI subsystem 2 |
+| Imports | Same six Windows system DLLs as the local portable candidate; no separate CRT runtime DLL |
+| Icon resources | Group ID 1 plus eight 32-bit original-active PNG frames 16 through 256 pixels; every payload byte-identical to source ICO; no manifest resource |
+| Windows icon extraction | Native read-only `ExtractIconExW` yielded 16px/32px icons; handles released; no executable entry point or application process was run |
+
+The hosted executable hash differs from the locally built portable candidate;
+each is identified by its own checksum and evidence. No claim of byte-for-byte
+cross-environment reproducibility or hosted GUI/power behavior is made.
+
+The lead's separate API readback confirmed the existing fork workflow approval
+policy remains `first_time_contributors`, default workflow token permissions
+are read-only, and workflows cannot approve PRs. Both active ruleset IDs and the
+five effective rules remained unchanged. PR mergeability reported true but
+`mergeable_state` remained `blocked` even after CI success; the owner-review
+bypass/actual merge had not yet been exercised at this evidence checkpoint.
+At that checkpoint the base branch did not yet contain CODEOWNERS.
+
+This evidence update changes documentation only. Each later commit must pass
+its own required CI; the first green run does not substitute for checks on a
+later documentation commit. Final bootstrap merge state is recorded on
+[PR #1](https://github.com/tbrownhe/RedEye/pull/1), and subsequent PR/main runs
+are recorded by [CI](https://github.com/tbrownhe/RedEye/actions/workflows/ci.yml).
+All previously listed unperformed native release checks remain unperformed.

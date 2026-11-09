@@ -502,3 +502,27 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   specialist TOML files parse with only intended instruction-text changes.
   Reference scans are clear and release artifact hashes are unchanged. Rust
   builds/native tests were not repeated for this documentation-only change.
+
+## PR and CI setup — 2026-11-08
+
+- Applied and read back both active GitHub rulesets: main-integrity
+  [26833257](https://github.com/tbrownhe/RedEye/rules/26833257) and owner-review
+  [26833258](https://github.com/tbrownhe/RedEye/rules/26833258). The five effective
+  rules match the reviewed JSON, including no CI/integrity bypass and only the
+  explicitly chosen owner PR review exception. Existing read-only workflow
+  permissions and first-time contributor workflow approval were preserved.
+- Used `ci/protect-main` and [PR #1](https://github.com/tbrownhe/RedEye/pull/1)
+  to install the workflow and global CODEOWNERS mapping. The owner exception
+  supports this owner-authored bootstrap; it does not permit direct main pushes
+  or merging a head without successful CI.
+- Separate review found no defects. Local Rust checks, seven tests, release
+  build, exact policy/checksum checks, and verified actionlint 1.7.12 passed.
+  The [first hosted run](https://github.com/tbrownhe/RedEye/actions/runs/42572845456)
+  independently passed all checks on the documented Windows/MSVC runner. The
+  validator checked the downloaded executable/checksum, GUI/x64 metadata,
+  system-only imports, and original icon resources without running the app.
+- [Validation evidence](VALIDATION.md) identifies the exact tested head,
+  artifact hashes, and unchanged native-test limitations. Later documentation
+  commits must pass their own CI before merge. [GitHub CI history](https://github.com/tbrownhe/RedEye/actions/workflows/ci.yml)
+  records current per-commit PR/main results; build success does not substitute
+  for the native Windows manual matrix.
