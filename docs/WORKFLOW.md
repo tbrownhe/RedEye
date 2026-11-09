@@ -625,3 +625,24 @@ The windows engineer owns functional files, a separate reviewer checks the
 integrated diff, and the release validator records checks. The lead uses the
 documentation-only exception for README/workflow prose and applies the reviewed
 remote settings; no application-code workflow exception is used.
+
+### First hosted candidate
+
+[PR #3](https://github.com/tbrownhe/RedEye/pull/3) installed the release workflow
+after its exact-head Windows CI passed. It merged as
+`3f544b167455541c46ebb1d507570eb0d8395c03`; its source branch was automatically
+deleted. That commit's [main CI](https://github.com/tbrownhe/RedEye/actions/runs/42581083549)
+passed. The [manual preview](https://github.com/tbrownhe/RedEye/actions/runs/42581216660)
+then passed its real main-CI gate and package build, skipped the writer job,
+and left both tags and releases empty.
+
+The owner pushed annotated tag `v0.1.0-rc.1` on that same commit. Its
+[tag run](https://github.com/tbrownhe/RedEye/actions/runs/42581531830) passed both
+jobs and created prerelease draft `438855643` with all three assets uploaded.
+API readback confirmed `draft: true`, `prerelease: true`, and no publication
+timestamp. Publication remains the owner's manual step. The draft can be
+reviewed through the repository's Releases page by a maintainer.
+
+[Validation evidence](VALIDATION.md) records downloaded artifact identities,
+checksums, resource inspections, and unchanged native-test limitations. The
+later evidence-only commit does not move the RC tag or rebuild its assets.
