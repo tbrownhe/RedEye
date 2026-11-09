@@ -754,3 +754,39 @@ source, while Windows 10, real sign-in, Explorer restart, cross-session, DPI
 changes, lock/sleep, forced termination, and long-idle checks remain **not run**.
 This documentation follow-up requires its own protected PR CI before merge;
 it does not publish the draft or change the existing tag/assets.
+
+## Owner publication — 2026-11-09
+
+The user reported publishing the existing draft. The lead independently read
+the public GitHub Releases API: release `438855643` is now `draft=false`,
+`prerelease=true`, with `published_at=2026-11-09T15:36:42Z` and tag
+`v0.1.0-rc.1`. Its public page is
+[RedEye 0.1.0-rc.1](https://github.com/tbrownhe/RedEye/releases/tag/v0.1.0-rc.1),
+with `RedEye.exe`, `RedEye-windows-x64.zip`, and `SHA256SUMS.txt` listed as assets.
+Earlier draft-state observations remain accurate for their dated checkpoints.
+Publication adds no native Windows test evidence; the remaining checks above
+are still unperformed.
+
+## README presentation — 2026-11-09
+
+Status: independent documentation review and validation passed on
+`docs/user-first-readme`. Local Markdown/HTML image paths and heading anchors
+resolve, and whitespace checks pass. The saved GitHub-rendered HTML contains
+the prominent Releases heading before developer information and four image
+uses with alternative text and explicit dimensions. This checks rendered
+markup, not browser pixel layout or Windows tray behavior.
+
+The validator visually inspected the supplied menu screenshot and both eye
+images. The 319×339 screenshot copy is byte-identical to the preserved root
+original (SHA256 `787CD7B2C76B1561BFBD8F7C243646DFF3A99252B1D4CDF305B786DF36ECA906`).
+Both 256×256 RGBA artwork PNGs exactly match the original ICO frames; PNG chunk
+checksums and image data validate. The caption accurately identifies all three
+options as enabled in the example. Six retained developer/product sections
+match their original contents; defaults and usage remain consistent.
+
+An independent unauthenticated request to the README's Releases destination
+returned HTTP 200. Public release API metadata independently confirms the
+published prerelease and all three existing assets, with unchanged digests.
+No local Cargo/build/native tests were repeated for this documentation-only
+change; runtime files and native-test limits are unchanged. Required protected
+PR CI remains a separate merge gate, not a claim of new native coverage.

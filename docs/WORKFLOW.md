@@ -166,7 +166,7 @@ required Rust checks and release build on `windows-2025-vs2026` with Rust
 `1.99.1-x86_64-pc-windows-msvc`, read-only contents permissions, and no persisted
 checkout credentials. First-party actions are pinned to verified commit SHAs.
 PR runs cancel superseded runs; each main/manual run gets an independent group.
-Successful runs upload only the executable and checksum for seven days.
+Successful runs upload the executable, portable ZIP, and checksums for seven days.
 No application GUI or power behavior is claimed from CI's unit/build checks.
 
 ## Milestones and exit gates
@@ -646,3 +646,24 @@ reviewed through the repository's Releases page by a maintainer.
 [Validation evidence](VALIDATION.md) records downloaded artifact identities,
 checksums, resource inspections, and unchanged native-test limitations. The
 later evidence-only commit does not move the RC tag or rebuild its assets.
+
+## User-facing README refresh — 2026-11-09
+
+- The README now opens with the original eye artwork, a prominent Windows
+  download link to the Releases list, installation steps, the user's actual
+  tray screenshot, and basic controls. Product requirements, build details,
+  CI, release procedures, architecture, and registry details remain below the
+  user guide under developer information. Product scope is unchanged.
+- The designer copied the supplied root screenshot unchanged into
+  `docs/images/tray-menu.png`, preserving the original user file, and extracted
+  the existing 256-pixel PNG frames from both ICO containers for web display.
+  Runtime artwork and drawing scripts were not changed. The screenshot is
+  explicitly an example with optional settings enabled, not default settings.
+- The lead uses the documentation-only exception for prose and formatting;
+  the designer owns documentation images. Independent review and documentation
+  validation cover the final presentation. Application code, dependencies,
+  CI, and release assets are outside this change. No new native test is claimed.
+- The user published the first candidate. Public GitHub API readback confirms
+  release `438855643`, tag `v0.1.0-rc.1`, is now a published prerelease with
+  the executable, ZIP, and checksums available. Earlier draft observations in
+  this document and the evidence log describe their historical checkpoints.

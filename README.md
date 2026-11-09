@@ -1,14 +1,95 @@
+<p align="center">
+  <img src="docs/images/redeye-active.png" alt="RedEye red eye icon" width="96" height="96">
+</p>
+
 # RedEye
 
-A small Windows 10/11 x64 tray utility for preventing automatic idle sleep.
+Keep Windows awake while your work runs. RedEye is a small tray app that
+prevents automatic idle sleep, with an option to keep the display on too.
 
-The v0.1 implementation is available as a portable release candidate. Windows
-11 native core behavior has been checked; Windows 10 and the remaining manual
-release checks are unverified. See [validation evidence](docs/VALIDATION.md)
-for the exact artifacts and limitations, and [the workflow](docs/WORKFLOW.md)
-for implementation decisions.
+## [Download RedEye for Windows](https://github.com/tbrownhe/RedEye/releases)
 
-## Product scope
+**Windows 10/11 | x64 | Portable**
+
+On the release page, expand **Assets** and choose **RedEye.exe** or
+**RedEye-windows-x64.zip**. The ZIP includes the app and usage instructions.
+`SHA256SUMS.txt` is available to verify your download. Releases marked
+**Pre-release** are test versions. The **Source code** archives are for
+building the app yourself.
+
+## Get started
+
+1. Download the executable, or extract it from the ZIP.
+2. Save `RedEye.exe` to a folder you will keep, such as
+   `%LOCALAPPDATA%\RedEye`, and double-click it. No installer, administrator
+   access, Rust, or extra icon files are required.
+3. Find the red eye in the Windows notification area. It may be inside the
+   hidden-icons menu opened with the **^** arrow.
+
+RedEye starts awake. By default, the display can still turn off; a saved
+**Keep display on** preference is restored on later launches. There is no
+main window or console to keep open.
+
+## See it in action
+
+<img src="docs/images/tray-menu.png" alt="RedEye's Windows tray menu showing Stay awake, Keep display on, Launch at sign-in, and Exit" width="319" height="339">
+
+*RedEye's tray menu, shown with Stay awake, Keep display on, and Launch at
+sign-in enabled. Sign-in launch is off until you choose to enable it.*
+
+## Use RedEye
+
+**Left-click** the eye to toggle awake mode. **Right-click** it to open the menu:
+
+| Menu item | What it does |
+|---|---|
+| **Stay awake** | Prevent automatic idle sleep while checked. |
+| **Keep display on** | Also keep the screen on while awake. The preference is remembered, including while sleep is allowed. |
+| **Launch at sign-in** | Start RedEye automatically when you sign in; optional and off by default. |
+| **Exit** | Clear RedEye's power request, remove its icon, and close the app. |
+
+The eye, tooltip, and menu checkmarks show the current state. Hover over the
+icon for **Awake** or **Sleep allowed**. Each launch starts awake; opening a
+second copy leaves the existing copy running.
+
+| Awake | Sleep allowed |
+|:---:|:---:|
+| <img src="docs/images/redeye-active.png" alt="Awake: bright red eye with luminous center" width="64" height="64"> | <img src="docs/images/redeye-inactive.png" alt="Sleep allowed: dim burgundy eye with dark center" width="64" height="64"> |
+
+Original eye artwork used by RedEye. See [icon details and actual tray sizes](docs/ICONS.md).
+
+## Launch at sign-in
+
+Run RedEye from its permanent folder, then enable **Launch at sign-in** in the
+tray menu. RedEye starts awake when you sign in. Windows startup controls and
+organizational policy can still disable or delay startup.
+
+If you move the app, turn sign-in launch off and enable it again from the new
+copy. RedEye refuses startup registration from known Cargo build or temporary
+folders. A checked menu item means a RedEye startup entry exists, including
+an entry pointing to an older copy.
+
+## Remove RedEye
+
+Turn off **Launch at sign-in**, choose **Exit**, then delete `RedEye.exe` and
+any extracted package files. No service or scheduled task is installed.
+Optional saved-preference cleanup is described under [settings storage](#settings-storage).
+
+## Compatibility and limits
+
+- Intended for Windows 10/11 x64. Core behavior has been checked on Windows 11;
+  Windows 10 and additional manual checks remain unverified. See
+  [validation evidence and remaining checks](docs/VALIDATION.md).
+- RedEye allows locking, explicit sleep/shutdown, and organizational policies
+  to work normally. Remote-session inactivity behavior is unaffected.
+- The icon uses display scaling at launch. Restart RedEye after changing
+  scaling for the sharpest icon; multiple DPI settings remain unverified.
+- Use **Exit** for normal cleanup. Forced termination relies on Windows
+  releasing the request; a stale tray icon may remain briefly.
+
+## For developers
+
+### Product scope
 
 RedEye supports long-running computational work, including autonomous coding
 sessions, through native Windows power requests instead of periodic NumLock
@@ -35,19 +116,7 @@ Windows decisions. [Icon direction](docs/ICONS.md),
 [milestone gates](docs/WORKFLOW.md), and [test evidence](docs/VALIDATION.md)
 complete the product baseline.
 
-## Install and run
-
-Download **RedEye.exe** or **RedEye-windows-x64.zip** from
-[GitHub Releases](https://github.com/tbrownhe/RedEye/releases). Release candidates
-are marked **Pre-release**. Drafts are visible to maintainers until manually
-published; CI artifacts are temporary developer downloads.
-
-Copy `RedEye.exe` from the portable package to a stable folder, such as
-`%LOCALAPPDATA%\RedEye`, and launch it. No installer, administrator privileges,
-Cargo, or external icon files are required. The release build has no console
-or visible main window. Nothing is registered for sign-in until you enable it.
-
-## Build from source
+### Build from source
 
 Use stable Rust with the native Windows x64 MSVC toolchain, C++ build tools,
 and Windows SDK resource compiler (`rc.exe`).
@@ -63,58 +132,16 @@ separate Visual C++ runtime installation. Copy the executable to a stable
 folder before enabling sign-in launch. For console diagnostics during
 development, use `cargo build --locked` and `target\debug\redeye.exe`.
 
-## Use
+### Check
 
-RedEye starts active, with the display allowed off by default; a saved display
-preference is restored. Its original red eye
-icon appears in the notification area, possibly in the overflow. Left-click
-toggles awake state. Right-click for a native menu:
+```powershell
+cargo fmt --check
+cargo check --locked
+cargo clippy --locked --all-targets -- -D warnings
+cargo test --locked
+```
 
-- **Stay awake** toggles automatic sleep prevention.
-- **Keep display on** also prevents display shutdown while awake. The checked
-  preference remains available while inactive, without holding a power request.
-- **Launch at sign-in** opts into per-user Windows startup registration.
-- **Exit** removes the icon, explicitly clears the power request, and exits.
-
-Bright/dark eye icons, tooltips, and checkmarks show the effective state after
-Windows accepts a change. Display preference is saved per user; awake state is
-not saved, so every launch starts active. A second launch in the same user
-session exits without another icon; it does not stop the existing instance.
-Use **Exit** for explicit cleanup. Forced termination relies on Windows
-releasing the thread-owned request; Explorer may briefly retain a stale icon.
-
-RedEye runs without elevation. Windows may require an Administrator terminal
-for the separate `powercfg /requests` diagnostic. It does not prevent locking,
-explicit sleep/shutdown, or organizational policy enforcement.
-
-The icon uses system DPI at launch. Restart after changing display scaling
-for the sharpest size. Per-monitor scaling changes and multiple DPI settings
-have not been validated.
-
-## Sign-in launch and settings
-
-Copy the executable to a stable folder, such as `%LOCALAPPDATA%\RedEye`, and
-launch that copy before checking **Launch at sign-in**. RedEye refuses startup
-registration from known Cargo output or temporary directories. Paths are
-quoted and must fit Windows Run's 260-character command limit.
-
-Only `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`'s `RedEye` value is
-changed. The menu rereads its actual registration whenever opened. A nonempty
-registration to another copy also shows checked, allowing stale entries to be
-disabled. After moving the executable, disable startup and enable it from the
-new location. Windows startup controls and organizational policy can still
-disable or delay sign-in launch; RedEye does not override them.
-
-The display preference is DWORD `KeepDisplayOn` under `HKCU\Software\RedEye`.
-Missing data defaults off; malformed data produces a warning and defaults off
-for that launch. A failed save reports that the current preference applies
-only to the current run. No active-state preference is stored.
-
-To remove RedEye, disable **Launch at sign-in**, choose **Exit**, and delete the
-copied executable. Optionally remove only the `KeepDisplayOn` value from the
-settings key. No service, scheduled task, or machine-wide setting is installed.
-
-## Contributing and CI
+### Contributing and CI
 
 Fork the repository or work on a feature branch, then open a pull request to
 `main`. Contributions require a passing **Windows CI** check and approval from
@@ -142,7 +169,7 @@ PR. Fork builds use read-only permissions and no repository secrets. CI does
 not replace the native tray, power-request, sign-in, and OS coverage checks in
 [the validation evidence](docs/VALIDATION.md).
 
-## Releases
+### Releases
 
 The owner creates a version tag, such as `v0.1.0-rc.1`, on an approved commit
 already merged to `main`. The tag must exactly match the version in
@@ -163,16 +190,7 @@ seven-day Actions artifact. It creates neither a tag nor a release. See
 bumps, checks, and recovery from an incomplete draft. Native checks that remain
 unperformed are listed in [validation evidence](docs/VALIDATION.md).
 
-## Check
-
-```powershell
-cargo fmt --check
-cargo check --locked
-cargo clippy --locked --all-targets -- -D warnings
-cargo test --locked
-```
-
-## Code layout
+### Code layout
 
 | File | Responsibility |
 |---|---|
@@ -200,3 +218,19 @@ external Windows observations are also required. Icons are embedded, with
 The build also uses `winresource` 0.1.34 with default features disabled and
 `version_check` to embed the active eye as the executable's Explorer/shortcut
 icon. These are build-only dependencies; both tray states remain embedded.
+
+### Settings storage
+
+Only `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`'s `RedEye` value is
+changed for startup. The menu rereads the actual registration whenever opened.
+The executable path is quoted and must fit Windows Run's 260-character command
+limit. No machine-wide startup setting is changed.
+
+The display preference is DWORD `KeepDisplayOn` under `HKCU\Software\RedEye`.
+Missing data defaults off; malformed data produces a warning and defaults off
+for that launch. A failed save reports that the current preference applies
+only to the current run. No active-state preference is stored. After removing
+RedEye, optionally remove only the `KeepDisplayOn` value from this settings key.
+
+RedEye runs without elevation. Windows may require an Administrator terminal
+for the separate `powercfg /requests` diagnostic.
