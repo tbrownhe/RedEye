@@ -118,6 +118,12 @@ and review conversations must be resolved. Direct changes, force pushes, and
 deletion of `main` are blocked. The owner can bypass the review requirement
 through a PR; the PR and CI requirements still apply to the owner.
 
+GitHub automatically deletes eligible source branches in this repository after
+merge. `main` remains protected against deletion. Source branches in forks
+depend on the fork's own cleanup setting and the merger's write access there.
+The intended cleanup setting is recorded in
+[repository settings](.github/repository-settings.json).
+
 [CI](.github/workflows/ci.yml) runs on PRs to `main`, pushes to `main`, and
 manual dispatch. It uses Windows Server 2025 with Visual Studio 2026 and pinned
 Rust 1.99.1 to check formatting, compilation, Clippy, tests, and the release

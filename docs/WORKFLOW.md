@@ -151,6 +151,15 @@ These JSON files record the intended GitHub settings for review. Committing
 them does not apply them automatically; apply changes through repository
 administration and verify the effective server-side rules afterward.
 
+[Repository settings](../.github/repository-settings.json) separately records
+`delete_branch_on_merge: true`. Apply only that property through the repository
+API to enable automatic cleanup of eligible merged head branches; do not relax
+the main-branch deletion rule. Like the rule JSON, this file is a reviewed
+settings record, not an automatic CI settings applier. For fork PRs, GitHub
+uses the fork's setting and also requires the merger to have write access to
+the fork. Validate the setting with API readback and verify an eligible setup
+PR's source branch disappears after merge while `main` remains protected.
+
 The [CI workflow](../.github/workflows/ci.yml) uses the stable check name
 `Windows CI`. Coordinate any rename with the required-check rule. It runs the
 required Rust checks and release build on `windows-2025-vs2026` with Rust
@@ -526,3 +535,22 @@ external APIs. Revisit a choice when evidence changes; avoid speculative design.
   commits must pass their own CI before merge. [GitHub CI history](https://github.com/tbrownhe/RedEye/actions/workflows/ci.yml)
   records current per-commit PR/main results; build success does not substitute
   for the native Windows manual matrix.
+
+## Merged-branch cleanup — 2026-11-08
+
+- At the user's request, applied the reviewed
+  [repository settings record](../.github/repository-settings.json) through a
+  narrow `PATCH /repos/tbrownhe/RedEye`: only `delete_branch_on_merge` changed
+  from false to true. API readback confirmed true, protected `main`, and the
+  same five effective main rules; other repository settings were unchanged.
+- Delegated implementation, separate review, and local validation found no
+  defects. The JSON has one boolean property; documentation links and
+  whitespace checks passed. Runtime/build/CI/ruleset files did not change, so
+  no local Rust or native tests were repeated. The protected PR still receives
+  its required hosted CI before merge; cleanup can be checked by reading its
+  source ref afterward. Fork branches require their own cleanup setting and
+  the merger's write access there.
+- The user also asked about homepage downloads. Versioned GitHub Releases
+  with attached binaries are the recommended distribution route; this change
+  does not add release publishing, create a tag, or publish a release. Existing
+  seven-day CI artifacts and native release-validation limits are unchanged.
